@@ -20,4 +20,4 @@ def last_ts(request):
     ts = 0
     if urls:
         ts = urls[0].ts
-    return JsonResponse(dict(ts=ts))
+    return JsonResponse(dict(ts=ts + 1))
