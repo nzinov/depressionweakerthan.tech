@@ -12,8 +12,12 @@ def visit(request):
     return HttpResponse()
 
 def last_ts(request):
+    print(request.body)
     data = json.loads(request.body.decode("utf8"))
     user = User.objects.get(pk=data["user"])
-    ts = user.url_set.order_by("-ts")[0].ts
+    urls = user.url_set.order_by("-ts")
+    ts = 0
+    if urls:
+        ts = urls[0].ts
     print(ts)
     return JsonResponse(dict(ts=ts))
