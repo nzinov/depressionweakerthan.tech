@@ -12,6 +12,7 @@ import pandas as pd
 import matplotlib.pyplot as plt
 import numpy as np
 import json
+from collections import defaultdict
 
 descr = {
     'P+': 2,
@@ -25,9 +26,9 @@ descr = {
 def api_sentiment_detection(req_type, content):
     url = "https://api.meaningcloud.com/sentiment-2.1"
     headers = {'content-type': 'application/x-www-form-urlencoded'}
-    
+
     alpha = 2.3
-    
+
     payload = ''
     if req_type == 'url':
         payload = "key=3b210fccaba3ae0b6fd61e0164b204e0&lang=auto&txtf=plain&url="
@@ -48,7 +49,7 @@ def api_sentiment_detection(req_type, content):
 
 def get_tweets(user, pages=25):
     """Gets tweets for a given user, via the Twitter frontend API."""
-    
+
     session = HTMLSession()
 
     url = f'https://twitter.com/i/profiles/show/{user}/timeline/tweets?include_available_features=1&include_entities=1&include_new_items_bar=true'
@@ -101,7 +102,7 @@ def get_tweets(user, pages=25):
                                 video_id = tmp[:tmp.index('.jpg')]
                                 videos.append({'id': video_id})
                     tweets.append({'tweetId': tweetId, 'time': time, 'text': text,
-                                   'replies': replies, 'retweets': retweets, 'likes': likes, 
+                                   'replies': replies, 'retweets': retweets, 'likes': likes,
                                    'entries': {
                                         'hashtags': hashtags, 'urls': urls,
                                         'photos': photos, 'videos': videos
@@ -131,30 +132,39 @@ def window(size):
 def twitter_score_info(user_name, deep_days=30):
     twitter_scores = []
     twitter_times = []
-    
+
     last_tweet_id = 0
 
     today_date = datetime.now()
-    check_date = today_date - timedelta(deep_days=30)
+    check_date = today_date - timedelta(deep_days)
     for ind, tweet in enumerate(get_tweets(user_name, pages=20)):
         if tweet and tweet['time'] > check_date and ind > 0:
             if ind == 1:
                 last_tweet_id = tweet['tweetId']
             msg = tweet['text']
-            #print(msg)
-            cur_score = api_sentiment_detection('txt', re.sub(r'[^A-Za-z0-9\,\?\!\#\$\%\&\'\*\+\-\.\^\_\`\|\~\:]', ' ', msg))
+            cur_score = api_sentiment_detection(
+                'txt', re.sub(r'[^A-Za-z0-9\,\?\!\#\$\%\&\'\*\+\-\.\^\_\`\|\~\:]', ' ', msg)
+            )
             if cur_score and tweet['time']:
                 twitter_scores.append(cur_score)
                 twitter_times.append(tweet['time'])
-    
+
+    window_size = min(deep_days, 7)
+    if len(twitter_scores) == 0:
+        return {
+            'avg_week_score': [0.0] * (deep_days + 1 - window_size),
+            'avg_month_score': 0.0,
+            'avg_day_score': [0.0] * deep_days,
+            'last_tweet_id': 0,
+        }
     avg_scores = np.mean(twitter_scores)
-    
+
     ser_scores = pd.Series(twitter_scores)
     ser_scores.index = twitter_times
     avg_day_score = ser_scores.groupby(ser_scores.index.day).mean()
-    
-    avg_week_score = np.convolve(avg_day_score, window(7))
-    
+
+    avg_week_score = np.convolve(avg_day_score, window(window_size), mode='valid')
+
     res = {}
     res['avg_month_score'] = avg_scores
     res['avg_week_score'] = avg_week_score
@@ -167,17 +177,17 @@ def browser_history_score_info(history, deep_days=30):
     br_hist = json.loads(history)
     urls = [br_hist[i].get('url') for i in range(len(br_hist))]
     times = [datetime.fromtimestamp(float(br_hist[i].get('ts')) / 1000) for i in range(len(br_hist))]
-    
+
     br_hist_scores = []
     br_hist_times = []
-    
+
     last_ts = 0
 
     today_date = datetime.now()
-    check_date = today_date - timedelta(deep_days=30)
-    
-    for ind, url in enumerate(urls[:100]):
-        
+    check_date = today_date - timedelta(deep_days)
+
+    for ind, url in enumerate(urls[:40]):
+
         rep = re.compile('www.google.*&q=*&*')
         search = rep.search(url)
         if search:
@@ -185,7 +195,7 @@ def browser_history_score_info(history, deep_days=30):
             first_part_str = url[search.end():]
             search = rep_end.search(first_part_str)
             search = first_part_str[:search.start()]
-        
+
         if times[ind] > check_date:
             if search:
                 cur_score = api_sentiment_detection('txt', search)
@@ -194,15 +204,24 @@ def browser_history_score_info(history, deep_days=30):
         if cur_score:
             br_hist_scores.append(cur_score)
             br_hist_times.append(times[ind])
-    
+
+    window_size = min(deep_days, 7)
+    if len(br_hist_scores):
+        return {
+            'avg_week_score': [0.0] * (deep_days + 1 - window_size),
+            'avg_month_score': 0.0,
+            'avg_day_score': [0.0] * deep_days,
+            'last_url_ts': None,
+        }
+
     avg_scores = np.mean(br_hist_scores)
-    
+
     ser_scores = pd.Series(br_hist_scores)
     ser_scores.index = br_hist_times
     avg_day_score = ser_scores.groupby(ser_scores.index.day).mean()
-    
-    avg_week_score = np.convolve(avg_day_score, window(7))
-    
+
+    avg_week_score = np.convolve(avg_day_score, window(window_size))
+
     res = {}
     res['avg_month_score'] = avg_scores
     res['avg_week_score'] = avg_week_score
@@ -211,13 +230,17 @@ def browser_history_score_info(history, deep_days=30):
     return res
 
 
-def is_depressed(scores):
-    last_week_avg_score = np.mean(scores[-7:])
-    all_avg_score = np.mean(scores)
-    if last_week_avg_score < -0.25:
+def detect_depression(url_month, url_week, twitter_month, twitter_week):
+    avg_month = url_month
+    avg_week = url_week
+    if twitter_month is not None:
+        avg_month = (avg_month + twitter_month) / 2.0
+        avg_week = (avg_week + twitter_week) / 2.0
+
+    if avg_week < -0.25:
         return True
     else:
-        if last_week_avg_score < -0.1 and all_avg_score > 0:
+        if avg_week < -0.1 and avg_month > 0:
             return True
         else:
             return False

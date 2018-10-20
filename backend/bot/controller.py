@@ -9,11 +9,12 @@ from .analyze_photo import analyze_photo
 
 from .settings import MIN_FRIEND_COUNT, TOKEN
 import os
+from datetime import timedelta
+from api.get_score import browser_history_score_info, twitter_score_info, detect_depression
 os.environ.setdefault("DJANGO_SETTINGS_MODULE", "backend.settings")
 import django
 django.setup()
 from api.models import User
-from datetime import timedelta
 
 
 EXTENTION_URL = (
@@ -21,13 +22,12 @@ EXTENTION_URL = (
     'npkememoejnlkmfojaaobeahlepddgad/related?depressionweakerthan_user_id={}'
 )
 
-global OLOLO
-OLOLO = 0
 
-
-def add_twitter_login(user_id, login):
+def add_twitter_info(user_id, login, res):
     user = User.objects.filter(user_id=user_id).first()
     user.twitter_login = login
+    user.twitter_month_score = res['avg_month_score']
+    user.twitter_week_score = res['avg_week_score']
     user.save()
 
 
@@ -165,6 +165,12 @@ class AddExtention(Stage):
             'just press "' + AddTwitter.skip_message + '".',
             reply_markup=ReplyKeyboardMarkup([[AddTwitter.skip_message]], one_time_keyboard=True)
         )
+        user = User.objects.get(user_id=update.message.from_user.id)
+        urls = user.url_set.order_by("-ts")
+        result = browser_history_score_info(urls)
+        user.url_week_score = result['avg_week_score']
+        user.url_month_score = result['avg_month_score']
+        user.save()
         return AddTwitter.name
 
 
@@ -196,8 +202,10 @@ class AddTwitter(Stage):
     def enter_twitter_login(cls, bot, update):
         user = update.message.from_user
         login = update.message.text
-        add_twitter_login(user.id, login)
         logger.info('User {} add twitter login {}'.format(user.name, login))
+        result = twitter_score_info(login)
+        logger.info('Got twitter depression score of user {}: {}'.format(user.name, result))
+        add_twitter_info(user.id, login, result)
         update.message.reply_text(cls.end_message, reply_markup=ReplyKeyboardRemove())
         cls.run_monitorings(user.id)
         return ConversationHandler.END
@@ -205,8 +213,8 @@ class AddTwitter(Stage):
     @classmethod
     def run_monitorings(cls, user_id):
         logger.info('Run monitorings for user with id=' + str(user_id))
-        Job(cls._controller.ask_for_photo, interval=timedelta(0, 20))
-        Job(cls._controller.grab_stat, interval=timedelta(1))
+        Job(cls._controller.ask_for_photo, interval=timedelta(0, 20), context={'user_id': user_id})
+        Job(cls._controller.grab_stat, interval=timedelta(1), context={'user_id': user_id})
 
 
 class Controller:
@@ -235,6 +243,7 @@ class Controller:
         dispatcher.add_handler(CommandHandler(cls.HELP[1:], cls.print_help))
         dispatcher.add_handler(CommandHandler(cls.ADD_FRIEND[1:], cls.add_friend))
         dispatcher.add_handler(MessageHandler(Filters.photo, cls.analyze_photo))
+        dispatcher.add_handler(CommandHandler('/_grab_stat', cls.grab_stat))
 
         cls._updater.start_polling()
         cls._updater.idle()
@@ -356,5 +365,34 @@ class Controller:
         bot.send_message(user_id, 'Send me a photo, please!')
 
     @classmethod
-    def grab_stat(cls, bot, job):
-        pass  # TODO
+    def grab_stat(cls, bot, job_or_update):
+        if isinstance(job_or_update, Job):
+            user_id = job_or_update.context['user_id']
+        elif isinstance(job_or_update, Updater):
+            user_id = job_or_update.message.from_user.id
+        else:
+            raise ValueError('job_or_update should be Updater or Job')
+        user = User.objects.filter(user_id=user_id).first()
+        login = user.twitter_login
+        if login is not None:
+            today_twitter_score = twitter_score_info(login, deep_days=1)['avg_month_score']
+            user.twitter_month_score *= 29.0 / 30.0
+            user.twitter_month_score += today_twitter_score
+            user.twitter_week_score *= 6.0 / 7.0
+            user.twitter_week_score += today_twitter_score
+
+        urls = user.url_set.order_by("-ts")
+        today_url_score = browser_history_score_info(urls, deep_days=1)['avg_month_score']
+        user.url_month_score *= 29.0 / 30.0
+        user.url_month_score += today_url_score
+        user.url_week_score *= 6.0 / 7.0
+        user.url_week_score += today_url_score
+
+        user.save()
+        logger.info('Got stat for user ' + user.username)
+        is_depressed = detect_depression(
+            user.url_month_score, user.url_week_score,
+            user.twitter_month_score, user.twitter_week_score
+        )
+        if is_depressed:
+            cls.depression_detected(user_id)
