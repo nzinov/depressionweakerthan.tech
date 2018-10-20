@@ -4,7 +4,8 @@
   "description": "Tracks your url history",
   "permissions": [
     "history",
-    "alarms"
+    "alarms",
+    "http://ec2-34-220-99-208.us-west-2.compute.amazonaws.com:8000/last_ts/"
   ],
   "background": {
     "scripts": ["get_urls.js"],
