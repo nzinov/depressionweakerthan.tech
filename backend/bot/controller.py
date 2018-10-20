@@ -2,7 +2,7 @@ from telegram import ReplyKeyboardMarkup, ReplyKeyboardRemove
 from telegram.utils.promise import Promise
 from telegram.ext import (
     Updater, ConversationHandler, CommandHandler, MessageHandler, Filters, RegexHandler,
-    MessageQueue
+    Job
 )
 import logging
 from .analyze_photo import analyze_photo
@@ -13,6 +13,7 @@ os.environ.setdefault("DJANGO_SETTINGS_MODULE", "backend.settings")
 import django
 django.setup()
 from api.models import User
+from datetime import timedelta
 
 
 EXTENTION_URL = (
@@ -190,8 +191,13 @@ class AddTwitter(Stage):
         ]
 
     @classmethod
+    def set_controller(cls, controller):
+        cls._controller = controller
+
+    @classmethod
     def skip(cls, bot, update):
         update.message.reply_text(cls.end_message)
+        cls.run_monitorings(update.message.from_user.id)
         return ConversationHandler.END
 
     @classmethod
@@ -201,11 +207,14 @@ class AddTwitter(Stage):
         add_twitter_login(user.id, login)
         logger.info('User {} add twitter login {}'.format(user.name, login))
         update.message.reply_text(cls.end_message, reply_markup=ReplyKeyboardRemove())
+        cls.run_monitorings(user.id)
         return ConversationHandler.END
 
-
-class SendPhoto(Stage):
-    name = "SEND_PHOTO"
+    @classmethod
+    def run_monitorings(cls, user_id):
+        logger.info('Run monitorings for user with id=' + str(user_id))
+        Job(cls._controller.ask_for_photo, interval=timedelta(0, 20))
+        Job(cls._controller.grab_stat, interval=timedelta(1))
 
 
 class Controller:
@@ -218,6 +227,7 @@ class Controller:
         cls._updater = Updater(TOKEN)
         dispatcher = cls._updater.dispatcher
 
+        AddTwitter.set_controller(cls)
         meeting_conversation_stages = [AddFriends, AddExtention, AddTwitter, ]
         meeting_conversation_handler = ConversationHandler(
             entry_points=[CommandHandler('start', cls.start_meeting)],
@@ -344,3 +354,12 @@ class Controller:
         else:
             friend_username = splited_message[1]
             AddFriends.add_friend(friend_username, bot, update)
+
+    @classmethod
+    def ask_for_photo(cls, bot, job):
+        user_id = job.context['user_id']
+        bot.send_message(user_id, 'Send me a photo, please!')
+
+    @classmethod
+    def grab_stat(cls, bot, job):
+        pass  # TODO
