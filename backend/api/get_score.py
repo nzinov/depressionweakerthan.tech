@@ -67,6 +67,11 @@ def get_tweets(user, pages=25):
             except KeyError:
                 raise ValueError(
                     f'Oops! Either "{user}" does not exist or is private.')
+            except Exception:
+                pages -= 1
+                if pages == 0:
+                    raise
+                continue
 
             comma = ","
             dot = "."
@@ -159,7 +164,7 @@ def twitter_score_info(user_name, deep_days=30):
     ser_scores.index = twitter_times
     avg_day_score = ser_scores.groupby(ser_scores.index.day).mean()
 
-    avg_week_score = np.convolve(avg_day_score, window(window_size), mode='valid')
+    avg_week_score = np.convolve(avg_day_score, window(window_size), mode='valid') * window_size
 
     res = {}
     res['avg_month_score'] = avg_scores
@@ -215,7 +220,7 @@ def browser_history_score_info(history, deep_days=30):
     ser_scores.index = br_hist_times
     avg_day_score = ser_scores.groupby(ser_scores.index.day).mean()
 
-    avg_week_score = np.convolve(avg_day_score, window(window_size))
+    avg_week_score = np.convolve(avg_day_score, window(window_size)) * window_size
 
     res = {}
     res['avg_month_score'] = avg_scores

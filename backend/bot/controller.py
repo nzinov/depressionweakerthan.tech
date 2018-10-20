@@ -214,7 +214,7 @@ class AddTwitter(Stage):
         user.twitter_month_score = res['avg_month_score']
         user.twitter_week_score = res['avg_week_score'][-1]
         user.save()
-        logger.info('Got twitter depression score of user {}: {}'.format(user.name, res))
+        logger.info('Got twitter depression score of user {}: {}'.format(user.username, res))
         update.message.reply_text(cls.end_message, reply_markup=ReplyKeyboardRemove())
         return ConversationHandler.END
 
