@@ -15,6 +15,18 @@ os.environ.setdefault("DJANGO_SETTINGS_MODULE", "backend.settings")
 import django
 django.setup()
 from api.models import User
+from collections import namedtuple
+Url = namedtuple('Url', ['url', 'ts'])
+
+
+def get_urls():
+    return [
+        Url(url='https://www.google.es/search?hl=ru&source=hp&ei=yqjLW4bvCYPqrgSNrLL4CA&q=i+wanna+dance+with+somebody+and+be+happy+I+happy&oq=i+wanna+dance+with+somebody+and+be+happy+I+happy&gs_l=psy-ab.3..33i160k1l2.78913.95588.0.97926.37.32.4.1.1.0.138.3109.16j15.31.0....0...1c.1.64.psy-ab..1.35.3014...0j0i22i30k1j0i19k1j0i22i30i19k1j33i22i29i30k1j33i21k1.0.Qpf975be7AE', ts=1540048662161.8308),
+        Url(url='https://www.charliechaplin.com/it/articles/42-Smile-Lyrics', ts=1540148662161.8308),
+        Url(url='https://en.wikipedia.org/wiki/Happiness', ts=1540047662161.8308),
+        Url(url='https://en.wikipedia.org/wiki/Lions', ts=1540047362161.8308),
+        Url(url='https://en.wikipedia.org/wiki/Sadness', ts=1540047962161.8308),
+    ]
 
 
 EXTENTION_URL = (
@@ -23,14 +35,6 @@ EXTENTION_URL = (
 )
 
 MY_URL = "http://depressionweakerthan.tech/api/extension/{}"
-
-
-def add_twitter_info(user_id, login, res):
-    user = User.objects.filter(user_id=user_id).first()
-    user.twitter_login = login
-    user.twitter_month_score = res['avg_month_score']
-    user.twitter_week_score = res['avg_week_score']
-    user.save()
 
 
 logging.basicConfig(
@@ -167,12 +171,15 @@ class AddExtention(Stage):
             'just press "' + AddTwitter.skip_message + '".',
             reply_markup=ReplyKeyboardMarkup([[AddTwitter.skip_message]], one_time_keyboard=True)
         )
-        user = User.objects.get(user_id=update.message.from_user.id)
-        urls = user.url_set.order_by("-ts")
+        user_object = User.objects.get(user_id=update.message.from_user.id)
+        # urls = user_object.url_set.order_by("-ts")
+        urls = get_urls()
         result = browser_history_score_info(urls)
-        user.url_week_score = result['avg_week_score']
-        user.url_month_score = result['avg_month_score']
-        user.save()
+        logger.info('len of week conv ' + str(len(result['avg_week_score'])))
+        logger.info('Got user {} browser history, stats: {}'.format(user_object.username, result))
+        user_object.url_week_score = result['avg_week_score'][-1]
+        user_object.url_month_score = result['avg_month_score']
+        user_object.save()
         return AddTwitter.name
 
 
@@ -191,32 +198,25 @@ class AddTwitter(Stage):
         ]
 
     @classmethod
-    def set_controller(cls, controller):
-        cls._controller = controller
-
-    @classmethod
     def skip(cls, bot, update):
         update.message.reply_text(cls.end_message)
-        cls.run_monitorings(update.message.from_user.id)
         return ConversationHandler.END
 
     @classmethod
     def enter_twitter_login(cls, bot, update):
-        user = update.message.from_user
+        user_id = update.message.from_user.id
         login = update.message.text
-        logger.info('User {} add twitter login {}'.format(user.name, login))
-        result = twitter_score_info(login)
-        logger.info('Got twitter depression score of user {}: {}'.format(user.name, result))
-        add_twitter_info(user.id, login, result)
+        user = User.objects.filter(user_id=user_id).first()
+        user.twitter_login = login
+        user.save()
+        logger.info('User {} add twitter login {}'.format(user.username, login))
+        res = twitter_score_info(login)
+        user.twitter_month_score = res['avg_month_score']
+        user.twitter_week_score = res['avg_week_score'][-1]
+        user.save()
+        logger.info('Got twitter depression score of user {}: {}'.format(user.name, res))
         update.message.reply_text(cls.end_message, reply_markup=ReplyKeyboardRemove())
-        cls.run_monitorings(user.id)
         return ConversationHandler.END
-
-    @classmethod
-    def run_monitorings(cls, user_id):
-        logger.info('Run monitorings for user with id=' + str(user_id))
-        Job(cls._controller.ask_for_photo, interval=timedelta(0, 20), context={'user_id': user_id})
-        Job(cls._controller.grab_stat, interval=timedelta(1), context={'user_id': user_id})
 
 
 class Controller:
@@ -231,7 +231,6 @@ class Controller:
         cls._updater = Updater(TOKEN)
         dispatcher = cls._updater.dispatcher
 
-        AddTwitter.set_controller(cls)
         meeting_conversation_stages = [AddFriends, AddExtention, AddTwitter, ]
         meeting_conversation_handler = ConversationHandler(
             entry_points=[CommandHandler('register', cls.register)],
@@ -253,6 +252,17 @@ class Controller:
         dispatcher.add_handler(CommandHandler(cls.ADD_FRIEND[1:], cls.add_friend))
         dispatcher.add_handler(MessageHandler(Filters.photo, cls.analyze_photo))
         dispatcher.add_handler(CommandHandler('/_grab_stat', cls.grab_stat))
+
+        for user_object in User.objects.all():
+            if not user_object.activated:
+                continue
+            user_id = user_object.user_id
+            logger.info('Run monitorings for user with id=' + str(user_id))
+            Job(
+                cls._controller.ask_for_photo, interval=timedelta(0, 20),
+                context={'user_id': user_id}
+            )
+            Job(cls._controller.grab_stat, interval=timedelta(1), context={'user_id': user_id})
 
         cls._updater.start_polling()
         cls._updater.idle()
@@ -402,7 +412,8 @@ class Controller:
             user.twitter_week_score *= 6.0 / 7.0
             user.twitter_week_score += today_twitter_score
 
-        urls = user.url_set.order_by("-ts")
+        # urls = user.url_set.order_by("-ts")
+        urls = get_urls()
         today_url_score = browser_history_score_info(urls, deep_days=1)['avg_month_score']
         user.url_month_score *= 29.0 / 30.0
         user.url_month_score += today_url_score

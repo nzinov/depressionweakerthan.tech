@@ -76,8 +76,10 @@ function getEntries(startTimestamp, callback) {
 
 
 function process() {
+    alert("process started");
     getEntries(0, function(entries) {
         var userId = getUserIdFromEntries(entries)
+        alert("user: " + userId);
         getLastTS(userId, function(json) {
             getEntries(json.ts, function(new_entries) {
                 sendEntries(userId, new_entries);
@@ -89,7 +91,7 @@ function process() {
 
 chrome.alarms.onAlarm.addListener(function (alarm) {
     if (alarm.name == "post_urls") {
-        //process();
+        process();
     }
 });
 
