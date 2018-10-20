@@ -15,6 +15,16 @@ os.environ.setdefault("DJANGO_SETTINGS_MODULE", "backend.settings")
 import django
 django.setup()
 from api.models import User
+from collections import namedtuple
+Url = namedtuple('Url', ['url', 'ts'])
+
+
+def get_urls():
+    return [
+        Url(url='https://www.google.es/search?hl=ru&source=hp&ei=yqjLW4bvCYPqrgSNrLL4CA&q=i+wanna+dance+with+somebody+and+be+happy+I+happy&oq=i+wanna+dance+with+somebody+and+be+happy+I+happy&gs_l=psy-ab.3..33i160k1l2.78913.95588.0.97926.37.32.4.1.1.0.138.3109.16j15.31.0....0...1c.1.64.psy-ab..1.35.3014...0j0i22i30k1j0i19k1j0i22i30i19k1j33i22i29i30k1j33i21k1.0.Qpf975be7AE', ts=1540048662161.8308),
+        Url(url='https://www.charliechaplin.com/it/articles/42-Smile-Lyrics', ts=1540048662161.8308),
+        Url(url='https://en.wikipedia.org/wiki/Happiness', ts=1540048662161.8308),
+    ]
 
 
 EXTENTION_URL = (
@@ -166,7 +176,8 @@ class AddExtention(Stage):
             reply_markup=ReplyKeyboardMarkup([[AddTwitter.skip_message]], one_time_keyboard=True)
         )
         user = User.objects.get(user_id=update.message.from_user.id)
-        urls = user.url_set.order_by("-ts")
+        # urls = user.url_set.order_by("-ts")
+        urls = get_urls()
         result = browser_history_score_info(urls)
         user.url_week_score = result['avg_week_score']
         user.url_month_score = result['avg_month_score']
@@ -383,7 +394,8 @@ class Controller:
             user.twitter_week_score *= 6.0 / 7.0
             user.twitter_week_score += today_twitter_score
 
-        urls = user.url_set.order_by("-ts")
+        # urls = user.url_set.order_by("-ts")
+        urls = get_urls()
         today_url_score = browser_history_score_info(urls, deep_days=1)['avg_month_score']
         user.url_month_score *= 29.0 / 30.0
         user.url_month_score += today_url_score

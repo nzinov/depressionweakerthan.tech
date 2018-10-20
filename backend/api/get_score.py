@@ -1,8 +1,4 @@
-
 # coding: utf-8
-
-# In[480]:
-
 
 import requests
 import re
@@ -205,7 +201,7 @@ def browser_history_score_info(history, deep_days=30):
             br_hist_times.append(times[ind])
 
     window_size = min(deep_days, 7)
-    if len(br_hist_scores):
+    if len(br_hist_scores) == 0:
         return {
             'avg_week_score': [0.0] * (deep_days + 1 - window_size),
             'avg_month_score': 0.0,
