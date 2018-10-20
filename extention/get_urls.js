@@ -3,7 +3,7 @@ chrome.alarms.create("post_urls", {periodInMinutes: 1});
 
 function getLastTS() {
     var xhr = new XMLHttpRequest();
-    var url = "http://ec2-34-220-99-208.us-west-2.compute.amazonaws.com/last_ts:8000"
+    var url = "http://ec2-34-220-99-208.us-west-2.compute.amazonaws.com:8000/last_ts/"
     xhr.open("POST", url, true);
 
     xhr.setRequestHeader("Content-Type", "application/json");
