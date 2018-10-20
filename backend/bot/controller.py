@@ -41,33 +41,21 @@ logging.basicConfig(
 logger = logging.getLogger(__name__)
 
 
-def add_subscriber_to_user(a, b):
-    global OLOLO
-    OLOLO += 1
-
-
 def get_all_subscribers(user_id):
-    return {
-        296688575: [270200185],
-        270200185: [296688575],
-    }.get(user_id)
+    user = User.objects.get(user_id=user_id)
+    return [friend.user_id for friend in user.trusted if friend.user_id is not None]
 
 
 def get_all_subscriptions(user_id):
-    return [270200185]
+    user = User.objects.get(user_id=user_id)
+    return [friend.user_id for friend in user.user_set if friend.user_id is not None]
 
 
-def get_user_id_by_username(username):
-    return {
-        '@Onaga1958': 270200185,
-        '@PKoshkin': 225128072,
-        '@nzinov': 296688575,
-        '@RakcheevEvgeny': 267804759,
-    }.get(username)
-
+def get_user_by_username(username):
+    return User.objects.get(username=username)
 
 def get_subscribers_count(user_id):
-    return OLOLO
+    return User.objects.get(user_id=user_id).trusted.count()
 
 
 class Stage:
@@ -95,8 +83,10 @@ class AddFriends(Stage):
             return False
         else:
             logger.info('User {} want to add friend {}'.format(user.id, friend_username))
-            friend_id = get_user_id_by_username(friend_username)
-            if friend_id is None:
+            friend = get_user_id_by_username(friend_username)
+            if friend is None:
+                friend = User(username=friend_username)
+                friend.save()
                 update.message.reply_text(
                     "This user didn't communication with me yet. Please share with him a link: "
                     "t.me/depression_weaker_than_tech_bot. Then " + friend_username +
@@ -109,12 +99,12 @@ class AddFriends(Stage):
                     'If one of your friends has depression you will be notified'
                 )
                 bot.send_message(
-                    friend_id,
+                    friend.user_id,
                     add_friend_message.format(user.name)
                 )
 
                 logger.info('Found friend id: ' + str(friend_id))
-            add_subscriber_to_user(user.id, friend_id)
+            user.trusted.add(friend)
             return True
 
     @classmethod
@@ -247,6 +237,11 @@ class Controller:
 
     @classmethod
     def start_meeting(cls, bot, update):
+        user = User.objects.get(username=update.message.from_user.name)
+        if not user:
+            user = User(username=update.message.from_user.name)
+        user.user_id = update.message.from_user.id
+        user.save()
         update.message.reply_text(
             "Hello! "
             'Tell me your friendns\' usernames in Telegram. '
