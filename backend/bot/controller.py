@@ -1,6 +1,8 @@
 from telegram import ReplyKeyboardMarkup, ReplyKeyboardRemove
+from telegram.utils.promise import Promise
 from telegram.ext import (
     Updater, ConversationHandler, CommandHandler, MessageHandler, Filters, RegexHandler,
+    MessageQueue
 )
 import logging
 from .analyze_photo import analyze_photo
@@ -23,7 +25,9 @@ OLOLO = 0
 
 
 def add_twitter_login(user_id, login):
-    pass  # TODO
+    user = User.objects.filter(user_id=user_id).first()
+    user.twitter_login = login
+    user.save()
 
 
 logging.basicConfig(
@@ -81,8 +85,8 @@ class AddFriends(Stage):
                 friend.save()
             if friend.user_id is None:
                 update.message.reply_text(
-                    "This user didn't communication with me yet. Please share with him a link: "
-                    "t.me/depression_weaker_than_tech_bot. Then " + friend_username +
+                    "This user didn't communication with me yet. Please share with him a link:\n"
+                    "t.me/depression_weaker_than_tech_bot\nThen " + friend_username +
                     " press \"Start\" in chat with me, he or she will be added to your friends."
                 )
                 logger.info('Not found friend with username: {}'.format(friend_username))
@@ -198,6 +202,10 @@ class AddTwitter(Stage):
         logger.info('User {} add twitter login {}'.format(user.name, login))
         update.message.reply_text(cls.end_message, reply_markup=ReplyKeyboardRemove())
         return ConversationHandler.END
+
+
+class SendPhoto(Stage):
+    name = "SEND_PHOTO"
 
 
 class Controller:
