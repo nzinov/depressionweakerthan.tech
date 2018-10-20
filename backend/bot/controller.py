@@ -22,8 +22,10 @@ Url = namedtuple('Url', ['url', 'ts'])
 def get_urls():
     return [
         Url(url='https://www.google.es/search?hl=ru&source=hp&ei=yqjLW4bvCYPqrgSNrLL4CA&q=i+wanna+dance+with+somebody+and+be+happy+I+happy&oq=i+wanna+dance+with+somebody+and+be+happy+I+happy&gs_l=psy-ab.3..33i160k1l2.78913.95588.0.97926.37.32.4.1.1.0.138.3109.16j15.31.0....0...1c.1.64.psy-ab..1.35.3014...0j0i22i30k1j0i19k1j0i22i30i19k1j33i22i29i30k1j33i21k1.0.Qpf975be7AE', ts=1540048662161.8308),
-        Url(url='https://www.charliechaplin.com/it/articles/42-Smile-Lyrics', ts=1540048662161.8308),
-        Url(url='https://en.wikipedia.org/wiki/Happiness', ts=1540048662161.8308),
+        Url(url='https://www.charliechaplin.com/it/articles/42-Smile-Lyrics', ts=1540148662161.8308),
+        Url(url='https://en.wikipedia.org/wiki/Happiness', ts=1540047662161.8308),
+        Url(url='https://en.wikipedia.org/wiki/Lions', ts=1540047362161.8308),
+        Url(url='https://en.wikipedia.org/wiki/Sadness', ts=1540047962161.8308),
     ]
 
 
@@ -171,6 +173,7 @@ class AddExtention(Stage):
         # urls = user_object.url_set.order_by("-ts")
         urls = get_urls()
         result = browser_history_score_info(urls)
+        logger.info('len of week conv ' + str(len(result['avg_week_score'])))
         logger.info('Got user {} browser history, stats: {}'.format(user_object.username, result))
         user_object.url_week_score = result['avg_week_score'][-1]
         user_object.url_month_score = result['avg_month_score']
@@ -204,7 +207,7 @@ class AddTwitter(Stage):
         user = User.objects.filter(user_id=user_id).first()
         user.twitter_login = login
         user.save()
-        logger.info('User {} add twitter login {}'.format(user.name, login))
+        logger.info('User {} add twitter login {}'.format(user.username, login))
         res = twitter_score_info(login)
         user.twitter_month_score = res['avg_month_score']
         user.twitter_week_score = res['avg_week_score'][-1]
