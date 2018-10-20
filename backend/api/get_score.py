@@ -1,7 +1,7 @@
 
 # coding: utf-8
 
-# In[430]:
+# In[480]:
 
 
 import requests
@@ -177,8 +177,20 @@ def browser_history_score_info(history, deep_days=30):
     check_date = today_date - timedelta(deep_days=30)
     
     for ind, url in enumerate(urls[:100]):
+        
+        rep = re.compile('www.google.*&q=*&*')
+        search = rep.search(url)
+        if search:
+            rep_end = re.compile('&')
+            first_part_str = url[search.end():]
+            search = rep_end.search(first_part_str)
+            search = first_part_str[:search.start()]
+        
         if times[ind] > check_date:
-            cur_score = api_sentiment_detection('url', url)
+            if search:
+                cur_score = api_sentiment_detection('txt', search)
+            else:
+                cur_score = api_sentiment_detection('url', url)
         if cur_score:
             br_hist_scores.append(cur_score)
             br_hist_times.append(times[ind])
