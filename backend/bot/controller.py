@@ -10,6 +10,7 @@ import logging
 # get_all_subscriptions
 # get_all_subscribers
 # add_twitter_login
+# send_photo
 
 from .settings import MIN_FRIEND_COUNT, TOKEN
 import os
@@ -24,6 +25,10 @@ EXTENTION_URL = (
 
 global OLOLO
 OLOLO = 0
+
+
+def analyze_photo(user_id, photo_path):
+    pass
 
 
 def add_twitter_login(user_id, login):
@@ -297,7 +302,12 @@ class Controller:
 
     @classmethod
     def send_photo(cls, bot, update):
-        pass  # TODO
+        photo_file = bot.get_file(update.message.photo[-1].file_id)
+        user = update.message.from_user
+        photo_file_name = '{}_photo.jpg'.format(user.name)
+        photo_file.dowload(photo_file_name)
+        logger.info("Photo of user %s was downloaded: %s", user.name, photo_file_name)
+        analyze_photo(user.id, photo_file_name)
 
     @classmethod
     def add_friend(cls, bot, update):
