@@ -136,8 +136,8 @@ class AddFriends(Stage):
         update.message.reply_text(
             'To help me monitor your browsing habits, please add my Chrome extention:\n' +
             EXTENTION_URL.format(update.message.from_user.id) + '\n'
-            "Don't worry, I will not gather any information except for aggregated numerical statistics."
-            "Sites you visit or any other sensitive data is not stored."
+            "Don't worry, I will not gather any information except for aggregated numerical "
+            "statistics. Sites you visit or any other sensitive data is not stored.",
             reply_markup=ReplyKeyboardMarkup(
                 [[AddExtention.agree_message]], one_time_keyboard=True
             )
@@ -272,10 +272,12 @@ class Controller:
             update.message.reply_text(
                 'User {} has added you as trusted friend'.format(cls.get_username(subscription))
             )
-        
-        update.message.reply_text("Now you can tell me username of a person whom you trust. "
+
+        update.message.reply_text(
+            "Now you can tell me username of a person whom you trust. "
             "They will be notified if you ever get depressed. "
-            "You can add any number of friends, but enter one username at a time. ")
+            "You can add any number of friends, but enter one username at a time. "
+        )
 
         return AddFriends.name
 
