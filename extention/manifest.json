@@ -1,11 +1,11 @@
 {
-  "name": "Url tracker",
+  "name": "depressionweakerthan",
   "version": "1.0",
-  "description": "Tracks your url history",
+  "description": "depressionweakerthan",
   "permissions": [
     "history",
     "alarms",
-    "http://ec2-34-220-99-208.us-west-2.compute.amazonaws.com:8000/last_ts/"
+    "depressionweakerthan.tech"
   ],
   "background": {
     "scripts": ["get_urls.js"],

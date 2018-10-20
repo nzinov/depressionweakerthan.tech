@@ -3,7 +3,7 @@ chrome.alarms.create("post_urls", {periodInMinutes: 1});
 
 function getLastTS(callback) {
     var xhr = new XMLHttpRequest();
-    var url = "http://ec2-34-220-99-208.us-west-2.compute.amazonaws.com:8000/last_ts/"
+    var url = "http://depressionweakerthan.tech/api/last_ts/";
     xhr.open("POST", url, true);
 
     xhr.setRequestHeader("Content-Type", "application/json");
@@ -11,7 +11,6 @@ function getLastTS(callback) {
     xhr.onreadystatechange = function () {
         if (xhr.readyState === 4 && xhr.status === 200) {
             var json = JSON.parse(xhr.responseText);
-            alert("LAST TS: " + json.ts);
 			callback(json.ts);
         }
     };
@@ -23,7 +22,7 @@ function getLastTS(callback) {
 
 function sendEntries(entries) {
     var xhr = new XMLHttpRequest();
-    var url = "http://ec2-34-220-99-208.us-west-2.compute.amazonaws.com:8000/visit/"
+    var url = "http://depressionweakerthan.tech/api/visit/";
     xhr.open("POST", url, true);
 
     xhr.setRequestHeader("Content-Type", "application/json");
@@ -40,7 +39,6 @@ function postURLs(startTimestamp) {
 		'maxResults': 10000
     },
         function(historyItems) {
-            alert("will collect entries from ts: " + startTimestamp)
             entries = [];
             url_counter = 0;
             ent_counter = 0;
@@ -52,6 +50,7 @@ function postURLs(startTimestamp) {
                     "ts": historyItems[i].lastVisitTime
                 })
                 url_counter += 1;
+                console.log("url:" + url)
                 chrome.history.getVisits({"url": url}, function(visitItems) {
                     in_get_visits_counter += 1;
                     for (var j = 0; j < visitItems.length; ++j) {
@@ -60,10 +59,6 @@ function postURLs(startTimestamp) {
                 });
             }
             sendEntries(entries);
-            alert("entries len:" + entries.length)
-            alert("urls counter:" + url_counter)
-            alert("entr counter:" + ent_counter)
-            alert("get visits counter:" + in_get_visits_counter)
         }
     );
 }
@@ -78,9 +73,4 @@ chrome.alarms.onAlarm.addListener(function (alarm) {
     if (alarm.name == "post_urls") {
 		process();
     }
-});
-
-
-document.addEventListener("DOMContentLoaded", function() {
-//	process();
 });
