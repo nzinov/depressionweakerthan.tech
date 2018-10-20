@@ -1,17 +1,16 @@
-console.log(chrome);
-
-
 chrome.alarms.create("post_urls", {periodInMinutes: 1});
 
 
 function getLastTS() {
     var xhr = new XMLHttpRequest();
-    var url = "ec2-34-220-99-208.us-west-2.compute.amazonaws.com:8000"
+    var url = "http://ec2-34-220-99-208.us-west-2.compute.amazonaws.com:8000"
     xhr.open("POST", url, true);
     var data = JSON.stringify({"user": "nzinov"});
+    xhr.setRequestHeader("Content-Type", "application/json");
+    xhr.header("Access-Control-Allow-Origin", "*");
     xhr.send(data);
     xhr.onreadystatechange = function() { 
-      if (req.readyState == 4)
+      if (xhr.readyState == 4)
         if (xhr.readyState == 4) {
               if (xhr.status == 200) {
                 var jsonData = xhr.responseText; 
@@ -40,6 +39,7 @@ function postUrls(startTimestamp) {
         }
     );
 }
+
 
 chrome.alarms.onAlarm.addListener(function (alarm) {
     if (alarm.name == "post_urls") {
