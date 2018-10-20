@@ -75,8 +75,7 @@ class AddFriends(Stage):
     def add_friend(friend_username, bot, update):
         user = update.message.from_user
         if friend_username[0] != '@':
-            update.message.reply_text('Username should start with @!')
-            return False
+            friend_username = '@' + friend_username
         else:
             logger.info('User {} want to add friend {}'.format(user.id, friend_username))
             friend = User.objects.filter(username=friend_username).first()
@@ -85,15 +84,15 @@ class AddFriends(Stage):
                 friend.save()
             if friend.user_id is None:
                 update.message.reply_text(
-                    "This user didn't communication with me yet. Please share with him a link:\n"
-                    "t.me/depression_weaker_than_tech_bot\nThen " + friend_username +
-                    " press \"Start\" in chat with me, he or she will be added to your friends."
+                    ("I don't know {} yet. Please share link "
+                    "t.me/depression_weaker_than_tech_bot with them. "
+                    "When they register, I will be able to notify them of your status").format(friend_username)
                 )
                 logger.info('Not found friend with username: {}'.format(friend_username))
             else:
                 add_friend_message = (
-                    'User {} add you as friend. '
-                    'If one of your friends has depression you will be notified'
+                    'User {} has added you to their list of trusted friends. '
+                    'Now I will drop you a message should they need your attention and care'
                 )
                 bot.send_message(
                     friend.user_id,
@@ -119,8 +118,9 @@ class AddFriends(Stage):
             else:
                 reply_markup = None
             update.message.reply_text(
-                'Great! You may enter more usernames, '
-                'then it\'s enough press "' + cls._done + '". You also may add more friends later',
+                ('User {} was added to your list of trusred friends. If you wish, you can now add more friends. '
+                'When you are finished, press "Done" button. '
+                'You will also be able to add more friends later.').format(friend_username),
                 reply_markup=reply_markup
             )
         else:
@@ -133,15 +133,10 @@ class AddFriends(Stage):
     @classmethod
     def done(cls, bot, update):
         update.message.reply_text(
-            'Well done! Now if I think you have a depression, I\'ll contact your friends!'
-        )
-        update.message.reply_text(
-            'Now, I need some information about you. '
-            'Please add my Chrome extention:\n' +
+            'To help me monitor your browsing habits, please add my Chrome extention:\n' +
             EXTENTION_URL.format(update.message.from_user.id) + '\n'
-            'I will analyze your websites and calculate statistics'
-            ', but I won\'t save your history. Without this extention it won\'t be possible to '
-            'know if you have a depression or not.',
+            "Don't worry, I will not gather any information except for aggregated numerical statistics."
+            "Sites you visit or any other sensitive data is not stored."
             reply_markup=ReplyKeyboardMarkup(
                 [[AddExtention.agree_message]], one_time_keyboard=True
             )
@@ -163,10 +158,10 @@ class AddExtention(Stage):
     @classmethod
     def done(cls, bot, update):
         update.message.reply_text(
-            'Great! It will be also helpfull, if you give me your Twitter login. '
-            'I will read your posts and posts liked by you. Also, just calculate stats and '
-            ' no more. If you don\'t have Twitter or don\'t want to share with me your login '
-            ' it\'s okey, just press "' + AddTwitter.skip_message + '".',
+            'Great! Could you tell me your Twitter username? '
+            'I will calculate statistics based on your posts and likes.'
+            'If you don\'t use Twitter or don\'t want to share it with me, '
+            'just press "' + AddTwitter.skip_message + '".',
             reply_markup=ReplyKeyboardMarkup([[AddTwitter.skip_message]], one_time_keyboard=True)
         )
         return AddTwitter.name
@@ -176,10 +171,7 @@ class AddTwitter(Stage):
     name = "ADD_TWITTER"
     skip_message = 'Skip'
     end_message = (
-        "Okey! That's all for now. I will send you a notification if someone add you "
-        'as friend and if one of your friends has depression. You can type /help '
-        'to get help and learn some commands with which '
-        'you can call me.'
+        "That's all for now, thanks! I will monitor your activity and ping your friends if I think you need extra care."
     )
 
     @classmethod
@@ -245,23 +237,26 @@ class Controller:
         user.user_id = update.message.from_user.id
         user.save()
 
-        update.message.reply_text('Hello!')
-        # TODO: write hello message
+        update.message.reply_text(
+            "I can help self-diagnose and fight mild cases of depression "
+            "by informing your friends that you need care.\n"
+            "You can learn more about me here: http://depressionweakerthan.tech. \n"
+            "If you want, you can just lurk and recieve notifications about your friends' statuses. "
+            "However, I strongly recommend you to add trusted friends and install my browser extension. "
+            "It is a good idea to take care of yourself even if you don't think you could ever get depressed"
+        )
+
+        update.message.reply_text('Hi!')
 
         subscriptions = get_all_subscriptions(update.message.from_user.id)
         for subscription in subscriptions:
             update.message.reply_text(
-                'User {} add you as friend'.format(cls.get_username(subscription))
+                'User {} has added you as trusted friend'.format(cls.get_username(subscription))
             )
-        update.message.reply_text(
-            'If someone who added you as friend has depression you will be notified'
-        )
-
-        update.message.reply_text(
-            'Tell me your friendns\' usernames in Telegram. '
-            'Be aware, username should start with @. '
-            'Type at least one and then click "Done"'
-        )
+        
+        update.message.reply_text("Now you can tell me username of a person whom you trust. "
+            "They will be notified if you ever get depressed. "
+            "You can add any number of friends, but enter one username at a time. ")
 
         return AddFriends.name
 
