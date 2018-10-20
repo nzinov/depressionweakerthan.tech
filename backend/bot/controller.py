@@ -23,7 +23,7 @@ OLOLO = 0
 
 
 def add_twitter_login(user_id, login):
-    pass
+    pass  # TODO
 
 
 logging.basicConfig(
@@ -236,19 +236,24 @@ class Controller:
             user = User(username=update.message.from_user.name)
         user.user_id = update.message.from_user.id
         user.save()
-        update.message.reply_text(
-            "Hello! "
-            'Tell me your friendns\' usernames in Telegram. '
-            'Be aware, username should start with @. '
-            'Type at least one and then click "Done"'
-        )
+
+        update.message.reply_text('Hello!')
+        # TODO: write hello message
 
         subscriptions = get_all_subscriptions(update.message.from_user.id)
         for subscription in subscriptions:
             update.message.reply_text(
                 'User {} add you as friend'.format(cls.get_username(subscription))
             )
-        update.message.reply_text('If one of your friends has depression you will be notified')
+        update.message.reply_text(
+            'If someone who added you as friend has depression you will be notified'
+        )
+
+        update.message.reply_text(
+            'Tell me your friendns\' usernames in Telegram. '
+            'Be aware, username should start with @. '
+            'Type at least one and then click "Done"'
+        )
 
         return AddFriends.name
 
@@ -283,6 +288,7 @@ class Controller:
         bot = cls.get_bot()
         username = cls.get_username(user_id)
         for subscriber in get_all_subscribers(user_id):
+            # TODO: write message
             bot.send_message(subscriber, 'Your friend, ' + username + ', is depressed!')
 
     @classmethod
