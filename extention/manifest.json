@@ -1,7 +1,7 @@
 {
-  "name": "depressionweakerthan",
-  "version": "1.0.1",
-  "description": "depressionweakerthan",
+  "name": "Depression Is Weaker Than Tech",
+  "version": "1.1",
+  "description": "This extension monitors your Internet activity to help you identify first signs of depression",
   "permissions": [
     "history",
     "alarms",
