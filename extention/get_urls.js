@@ -23,7 +23,7 @@ function getLastTS() {
 
 function sendEntries(entries) {
     var xhr = new XMLHttpRequest();
-    var url = "http://ec2-34-220-99-208.us-west-2.compute.amazonaws.com:8000/last_ts/"
+    var url = "http://ec2-34-220-99-208.us-west-2.compute.amazonaws.com:8000/visit/"
     xhr.open("POST", url, true);
 
     xhr.setRequestHeader("Content-Type", "application/json");
