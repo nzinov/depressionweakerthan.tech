@@ -3,11 +3,12 @@
   "version": "1.0",
   "description": "Tracks your url history",
   "permissions": [
-    "history"
+    "history",
+    "alarms"
   ],
-  "browser_action": {
-    "default_popup": "typedUrls.html",
-    "default_icon": "clock.png"
+  "background": {
+    "scripts": ["get_urls.js"],
+    "persistent": false
   },
   "manifest_version": 2
 }
