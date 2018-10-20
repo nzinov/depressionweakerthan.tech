@@ -20,6 +20,6 @@ from api.views import *
 urlpatterns = [
     path('visit/', visit),
     path('last_ts/', last_ts),
-    path('extension/(.*)', extension),
+    path(r'extension/<int:id>', extension),
     path('admin/', admin.site.urls),
 ]

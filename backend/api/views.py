@@ -27,5 +27,5 @@ def last_ts(request):
         ts = urls[0].ts
     return JsonResponse(dict(ts=ts + 1))
 
-def extension(request):
-    return HttpResponseRedirect(EXTENTION_URL)
+def extension(request, id):
+    return HttpResponse("<a href="+EXTENTION_URL+">Download<a/>")
