@@ -3,21 +3,21 @@ chrome.alarms.create("post_urls", {periodInMinutes: 1});
 
 function getLastTS() {
     var xhr = new XMLHttpRequest();
-    var url = "http://ec2-34-220-99-208.us-west-2.compute.amazonaws.com:8000"
+    var url = "http://ec2-34-220-99-208.us-west-2.compute.amazonaws.com/last_ts:8000"
     xhr.open("POST", url, true);
-    var data = JSON.stringify({"user": "nzinov"});
+
     xhr.setRequestHeader("Content-Type", "application/json");
-    xhr.header("Access-Control-Allow-Origin", "*");
-    xhr.send(data);
-    xhr.onreadystatechange = function() { 
-      if (xhr.readyState == 4)
-        if (xhr.readyState == 4) {
-              if (xhr.status == 200) {
-                var jsonData = xhr.responseText; 
-                alert("POST ANSWER: " + jsonData);
-            }
+    xhr.setRequestHeader("Access-Control-Allow-Origin", "*");
+
+    xhr.onreadystatechange = function () {
+        if (xhr.readyState === 4 && xhr.status === 200) {
+            var json = JSON.parse(xhr.responseText);
+            alert("POST ANSWER: " + json);
         }
     };
+
+    var data = JSON.stringify({"user": "nzinov"});
+    xhr.send(data);
 
     var microsecondsPerWeek = 1000 * 60 * 60 * 24 * 7;
     return (new Date).getTime() - microsecondsPerWeek;
