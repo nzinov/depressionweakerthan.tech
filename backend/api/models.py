@@ -4,6 +4,7 @@ from django.db import models
 class User(models.Model):
     activated = models.BooleanField(default=False)
     username = models.TextField(primary_key=True)
+    user_id = models.IntegerField(null=True)
     trusted = models.ManyToManyField("User")
     
 class Url(models.Model):

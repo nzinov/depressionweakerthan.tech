@@ -11,7 +11,11 @@ import logging
 # get_all_subscribers
 # add_twitter_login
 
-from settings import MIN_FRIEND_COUNT, TOKEN
+from .settings import MIN_FRIEND_COUNT, TOKEN
+import os
+os.environ.setdefault("DJANGO_SETTINGS_MODULE", "backend.settings")
+from api.models import User
+
 
 EXTENTION_URL = (
     'https://chrome.google.com/webstore/detail/depressionweakerthan/'
