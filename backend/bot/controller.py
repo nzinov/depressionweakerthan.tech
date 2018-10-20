@@ -5,6 +5,7 @@ from telegram.ext import (
 from itertools import count
 import random
 import logging
+from analyze_photo import analyze_photo
 
 # from database import add_subscriber, get_subscribers_count, get_user_id_by_username,
 # get_all_subscriptions
@@ -27,10 +28,6 @@ EXTENTION_URL = (
 
 global OLOLO
 OLOLO = 0
-
-
-def analyze_photo(user_id, photo_path):
-    pass
 
 
 def add_twitter_login(user_id, login):
@@ -143,8 +140,8 @@ class AddFriends(Stage):
         )
         update.message.reply_text(
             'Now, I need some information about you. '
-            'Please add my Chrome extention: ' +
-            EXTENTION_URL.format(update.message.from_user.id) +
+            'Please add my Chrome extention:\n' +
+            EXTENTION_URL.format(update.message.from_user.id) + '\n'
             'I will analyze your websites and calculate statistics'
             ', but I won\'t save your history. Without this extention it won\'t be possible to '
             'know if you have a depression or not.',
@@ -234,6 +231,7 @@ class Controller:
         ))
         dispatcher.add_handler(CommandHandler(cls.HELP[1:], cls.print_help))
         dispatcher.add_handler(CommandHandler(cls.ADD_FRIEND[1:], cls.add_friend))
+        dispatcher.add_handler(MessageHandler(Filters.photo, cls.analyze_photo))
 
         cls._updater.start_polling()
         cls._updater.idle()
@@ -295,19 +293,41 @@ class Controller:
             'Type ' + cls.DEPRESSED + ' to tell your freinds that your is depressed.\n'
             'Type "' + cls.ADD_FRIEND + ' @friend_username" to add person with username '
             '@friend_username to your friends. He or she will be notified if I somehow '
-            'realize that you is depressed.'
+            'realize that you is depressed.\n'
+            'Also you may send your photos, I analyze it without saving as usual. It also '
+            ' helps me to predict whether you depressed or not.\n'
         )
 
     @classmethod
-    def send_photo(cls, bot, update):
+    def analyze_photo(cls, bot, update):
         photo_file = bot.get_file(update.message.photo[-1].file_id)
         user = update.message.from_user
         photo_file_name = '{}_photo.jpg'.format(user.name)
-        photo_file.dowload(photo_file_name)
+        photo_file.download(photo_file_name)
         logger.info("Photo of user %s was downloaded: %s", user.name, photo_file_name)
-        analyze_photo(user.id, photo_file_name)
+        try:
+            scores = analyze_photo(photo_file_name)
+        except ValueError as e:
+            update.message.reply_text("I can't find any face on this photo :(")
+            return
+        logger.info(photo_file_name + ' scores: ' + str(scores))
+        if scores['sadness'] > 0.5:
+            cls.notify_friends_about_depression(user.id)
+            update.message.reply_text(
+                "Not the greatest day, is it? Anyway, keep your chin up! "
+                "Waiting for the next photo :)"
+            )
+        else:
+            update.message.reply_text('Nice photo! Now I\'m looking forward for the next one :)')
 
     @classmethod
     def add_friend(cls, bot, update):
-        _, friend_username = update.message.text.split(maxsplit=1)
-        AddFriends.add_friend(friend_username, bot, update)
+        splited_message = update.message.text.split(maxsplit=1)
+        if len(splited_message) < 2:
+            update.message.reply_text(
+                'You should pass to this command your friend username, like this:\n' +
+                cls.ADD_FRIEND + ' @friend_username'
+            )
+        else:
+            friend_username = splited_message[1]
+            AddFriends.add_friend(friend_username, bot, update)
