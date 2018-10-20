@@ -15,6 +15,8 @@ import logging
 from .settings import MIN_FRIEND_COUNT, TOKEN
 import os
 os.environ.setdefault("DJANGO_SETTINGS_MODULE", "backend.settings")
+import django
+django.setup()
 from api.models import User
 
 
@@ -43,12 +45,12 @@ logger = logging.getLogger(__name__)
 
 def get_all_subscribers(user_id):
     user = User.objects.get(user_id=user_id)
-    return [friend.user_id for friend in user.trusted if friend.user_id is not None]
+    return [friend.user_id for friend in user.trusted.all() if friend.user_id is not None]
 
 
 def get_all_subscriptions(user_id):
     user = User.objects.get(user_id=user_id)
-    return [friend.user_id for friend in user.user_set if friend.user_id is not None]
+    return [friend.user_id for friend in user.user_set.all() if friend.user_id is not None]
 
 
 def get_user_by_username(username):
@@ -83,10 +85,11 @@ class AddFriends(Stage):
             return False
         else:
             logger.info('User {} want to add friend {}'.format(user.id, friend_username))
-            friend = get_user_id_by_username(friend_username)
+            friend = User.objects.filter(username=friend_username).first()
             if friend is None:
                 friend = User(username=friend_username)
                 friend.save()
+            if friend.user_id is None:
                 update.message.reply_text(
                     "This user didn't communication with me yet. Please share with him a link: "
                     "t.me/depression_weaker_than_tech_bot. Then " + friend_username +
@@ -103,8 +106,8 @@ class AddFriends(Stage):
                     add_friend_message.format(user.name)
                 )
 
-                logger.info('Found friend id: ' + str(friend_id))
-            user.trusted.add(friend)
+                logger.info('Found friend id: ' + str(friend.user_id))
+            User.objects.get(user_id=user.id).trusted.add(friend)
             return True
 
     @classmethod
@@ -237,7 +240,7 @@ class Controller:
 
     @classmethod
     def start_meeting(cls, bot, update):
-        user = User.objects.get(username=update.message.from_user.name)
+        user = User.objects.filter(username=update.message.from_user.name).first()
         if not user:
             user = User(username=update.message.from_user.name)
         user.user_id = update.message.from_user.id
