@@ -2,16 +2,8 @@ from telegram import ReplyKeyboardMarkup, ReplyKeyboardRemove
 from telegram.ext import (
     Updater, ConversationHandler, CommandHandler, MessageHandler, Filters, RegexHandler,
 )
-from itertools import count
-import random
 import logging
 from .analyze_photo import analyze_photo
-
-# from database import add_subscriber, get_subscribers_count, get_user_id_by_username,
-# get_all_subscriptions
-# get_all_subscribers
-# add_twitter_login
-# send_photo
 
 from .settings import MIN_FRIEND_COUNT, TOKEN
 import os
@@ -52,6 +44,7 @@ def get_all_subscriptions(user_id):
 
 def get_user_by_username(username):
     return User.objects.get(username=username)
+
 
 def get_subscribers_count(user_id):
     return User.objects.get(user_id=user_id).trusted.count()
@@ -278,6 +271,12 @@ class Controller:
     @classmethod
     def notify_user_about_depression(cls, user_id):
         bot = cls.get_bot()
+        bot.send_message(
+            user_id,
+            "I'm worring about your recent Internet activity. "
+            "Honestly, I think you have a depression! :(\n"
+            "Try to relax and contact your friends, cheer up!"
+        )
 
     @classmethod
     def notify_friends_about_depression(cls, user_id):
