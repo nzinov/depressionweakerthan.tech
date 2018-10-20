@@ -104,4 +104,4 @@ venv.bak/
 .mypy_cache/
 .DS_Store
 # bot settings
-bot/settings.py
+backend/bot/settings.py
