@@ -33,14 +33,6 @@ EXTENTION_URL = (
 )
 
 
-def add_twitter_info(user_id, login, res):
-    user = User.objects.filter(user_id=user_id).first()
-    user.twitter_login = login
-    user.twitter_month_score = res['avg_month_score']
-    user.twitter_week_score = res['avg_week_score'][-1]
-    user.save()
-
-
 logging.basicConfig(
     format='%(asctime)s - %(name)s - %(levelname)s - %(message)s', level=logging.INFO
 )
@@ -175,13 +167,14 @@ class AddExtention(Stage):
             'just press "' + AddTwitter.skip_message + '".',
             reply_markup=ReplyKeyboardMarkup([[AddTwitter.skip_message]], one_time_keyboard=True)
         )
-        user = User.objects.get(user_id=update.message.from_user.id)
-        # urls = user.url_set.order_by("-ts")
+        user_object = User.objects.get(user_id=update.message.from_user.id)
+        # urls = user_object.url_set.order_by("-ts")
         urls = get_urls()
         result = browser_history_score_info(urls)
-        user.url_week_score = result['avg_week_score'][-1]
-        user.url_month_score = result['avg_month_score']
-        user.save()
+        logger.info('Got user {} browser history, stats: {}'.format(user_object.username, result))
+        user_object.url_week_score = result['avg_week_score'][-1]
+        user_object.url_month_score = result['avg_month_score']
+        user_object.save()
         return AddTwitter.name
 
 
@@ -206,12 +199,17 @@ class AddTwitter(Stage):
 
     @classmethod
     def enter_twitter_login(cls, bot, update):
-        user = update.message.from_user
+        user_id = update.message.from_user.id
         login = update.message.text
+        user = User.objects.filter(user_id=user_id).first()
+        user.twitter_login = login
+        user.save()
         logger.info('User {} add twitter login {}'.format(user.name, login))
-        result = twitter_score_info(login)
-        logger.info('Got twitter depression score of user {}: {}'.format(user.name, result))
-        add_twitter_info(user.id, login, result)
+        res = twitter_score_info(login)
+        user.twitter_month_score = res['avg_month_score']
+        user.twitter_week_score = res['avg_week_score'][-1]
+        user.save()
+        logger.info('Got twitter depression score of user {}: {}'.format(user.name, res))
         update.message.reply_text(cls.end_message, reply_markup=ReplyKeyboardRemove())
         return ConversationHandler.END
 
