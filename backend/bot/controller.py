@@ -1,16 +1,30 @@
 from telegram import ReplyKeyboardMarkup, ReplyKeyboardRemove
+from telegram.utils.promise import Promise
 from telegram.ext import (
     Updater, ConversationHandler, CommandHandler, MessageHandler, Filters, RegexHandler,
+    Job
 )
 import logging
 from .analyze_photo import analyze_photo
 
 from .settings import MIN_FRIEND_COUNT, TOKEN
 import os
+from datetime import timedelta
+from api.get_score import browser_history_score_info, twitter_score_info, detect_depression
 os.environ.setdefault("DJANGO_SETTINGS_MODULE", "backend.settings")
 import django
 django.setup()
 from api.models import User
+from collections import namedtuple
+Url = namedtuple('Url', ['url', 'ts'])
+
+
+def get_urls():
+    return [
+        Url(url='https://www.google.es/search?hl=ru&source=hp&ei=yqjLW4bvCYPqrgSNrLL4CA&q=i+wanna+dance+with+somebody+and+be+happy+I+happy&oq=i+wanna+dance+with+somebody+and+be+happy+I+happy&gs_l=psy-ab.3..33i160k1l2.78913.95588.0.97926.37.32.4.1.1.0.138.3109.16j15.31.0....0...1c.1.64.psy-ab..1.35.3014...0j0i22i30k1j0i19k1j0i22i30i19k1j33i22i29i30k1j33i21k1.0.Qpf975be7AE', ts=1540048662161.8308),
+        Url(url='https://www.charliechaplin.com/it/articles/42-Smile-Lyrics', ts=1540048662161.8308),
+        Url(url='https://en.wikipedia.org/wiki/Happiness', ts=1540048662161.8308),
+    ]
 
 
 EXTENTION_URL = (
@@ -18,12 +32,13 @@ EXTENTION_URL = (
     'npkememoejnlkmfojaaobeahlepddgad/related?depressionweakerthan_user_id={}'
 )
 
-global OLOLO
-OLOLO = 0
 
-
-def add_twitter_login(user_id, login):
-    pass  # TODO
+def add_twitter_info(user_id, login, res):
+    user = User.objects.filter(user_id=user_id).first()
+    user.twitter_login = login
+    user.twitter_month_score = res['avg_month_score']
+    user.twitter_week_score = res['avg_week_score'][-1]
+    user.save()
 
 
 logging.basicConfig(
@@ -71,8 +86,7 @@ class AddFriends(Stage):
     def add_friend(friend_username, bot, update):
         user = update.message.from_user
         if friend_username[0] != '@':
-            update.message.reply_text('Username should start with @!')
-            return False
+            friend_username = '@' + friend_username
         else:
             logger.info('User {} want to add friend {}'.format(user.id, friend_username))
             friend = User.objects.filter(username=friend_username).first()
@@ -81,15 +95,15 @@ class AddFriends(Stage):
                 friend.save()
             if friend.user_id is None:
                 update.message.reply_text(
-                    "This user didn't communication with me yet. Please share with him a link: "
-                    "t.me/depression_weaker_than_tech_bot. Then " + friend_username +
-                    " press \"Start\" in chat with me, he or she will be added to your friends."
+                    ("I don't know {} yet. Please share link "
+                    "t.me/depression_weaker_than_tech_bot with them. "
+                    "When they register, I will be able to notify them of your status").format(friend_username)
                 )
                 logger.info('Not found friend with username: {}'.format(friend_username))
             else:
                 add_friend_message = (
-                    'User {} add you as friend. '
-                    'If one of your friends has depression you will be notified'
+                    'User {} has added you to their list of trusted friends. '
+                    'Now I will drop you a message should they need your attention and care'
                 )
                 bot.send_message(
                     friend.user_id,
@@ -115,8 +129,9 @@ class AddFriends(Stage):
             else:
                 reply_markup = None
             update.message.reply_text(
-                'Great! You may enter more usernames, '
-                'then it\'s enough press "' + cls._done + '". You also may add more friends later',
+                ('User {} was added to your list of trusred friends. If you wish, you can now add more friends. '
+                'When you are finished, press "Done" button. '
+                'You will also be able to add more friends later.').format(friend_username),
                 reply_markup=reply_markup
             )
         else:
@@ -129,15 +144,10 @@ class AddFriends(Stage):
     @classmethod
     def done(cls, bot, update):
         update.message.reply_text(
-            'Well done! Now if I think you have a depression, I\'ll contact your friends!'
-        )
-        update.message.reply_text(
-            'Now, I need some information about you. '
-            'Please add my Chrome extention:\n' +
+            'To help me monitor your browsing habits, please add my Chrome extention:\n' +
             EXTENTION_URL.format(update.message.from_user.id) + '\n'
-            'I will analyze your websites and calculate statistics'
-            ', but I won\'t save your history. Without this extention it won\'t be possible to '
-            'know if you have a depression or not.',
+            "Don't worry, I will not gather any information except for aggregated numerical "
+            "statistics. Sites you visit or any other sensitive data is not stored.",
             reply_markup=ReplyKeyboardMarkup(
                 [[AddExtention.agree_message]], one_time_keyboard=True
             )
@@ -159,12 +169,19 @@ class AddExtention(Stage):
     @classmethod
     def done(cls, bot, update):
         update.message.reply_text(
-            'Great! It will be also helpfull, if you give me your Twitter login. '
-            'I will read your posts and posts liked by you. Also, just calculate stats and '
-            ' no more. If you don\'t have Twitter or don\'t want to share with me your login '
-            ' it\'s okey, just press "' + AddTwitter.skip_message + '".',
+            'Great! Could you tell me your Twitter username? '
+            'I will calculate statistics based on your posts and likes.'
+            'If you don\'t use Twitter or don\'t want to share it with me, '
+            'just press "' + AddTwitter.skip_message + '".',
             reply_markup=ReplyKeyboardMarkup([[AddTwitter.skip_message]], one_time_keyboard=True)
         )
+        user = User.objects.get(user_id=update.message.from_user.id)
+        # urls = user.url_set.order_by("-ts")
+        urls = get_urls()
+        result = browser_history_score_info(urls)
+        user.url_week_score = result['avg_week_score'][-1]
+        user.url_month_score = result['avg_month_score']
+        user.save()
         return AddTwitter.name
 
 
@@ -172,10 +189,7 @@ class AddTwitter(Stage):
     name = "ADD_TWITTER"
     skip_message = 'Skip'
     end_message = (
-        "Okey! That's all for now. I will send you a notification if someone add you "
-        'as friend and if one of your friends has depression. You can type /help '
-        'to get help and learn some commands with which '
-        'you can call me.'
+        "That's all for now, thanks! I will monitor your activity and ping your friends if I think you need extra care."
     )
 
     @classmethod
@@ -194,8 +208,10 @@ class AddTwitter(Stage):
     def enter_twitter_login(cls, bot, update):
         user = update.message.from_user
         login = update.message.text
-        add_twitter_login(user.id, login)
         logger.info('User {} add twitter login {}'.format(user.name, login))
+        result = twitter_score_info(login)
+        logger.info('Got twitter depression score of user {}: {}'.format(user.name, result))
+        add_twitter_info(user.id, login, result)
         update.message.reply_text(cls.end_message, reply_markup=ReplyKeyboardRemove())
         return ConversationHandler.END
 
@@ -225,6 +241,18 @@ class Controller:
         dispatcher.add_handler(CommandHandler(cls.HELP[1:], cls.print_help))
         dispatcher.add_handler(CommandHandler(cls.ADD_FRIEND[1:], cls.add_friend))
         dispatcher.add_handler(MessageHandler(Filters.photo, cls.analyze_photo))
+        dispatcher.add_handler(CommandHandler('/_grab_stat', cls.grab_stat))
+
+        for user_object in User.objects.all():
+            if not user_object.activated:
+                continue
+            user_id = user_object.user_id
+            logger.info('Run monitorings for user with id=' + str(user_id))
+            Job(
+                cls._controller.ask_for_photo, interval=timedelta(0, 20),
+                context={'user_id': user_id}
+            )
+            Job(cls._controller.grab_stat, interval=timedelta(1), context={'user_id': user_id})
 
         cls._updater.start_polling()
         cls._updater.idle()
@@ -237,22 +265,27 @@ class Controller:
         user.user_id = update.message.from_user.id
         user.save()
 
-        update.message.reply_text('Hello!')
-        # TODO: write hello message
+        update.message.reply_text('Hi!')
+
+        update.message.reply_text(
+            "I can help self-diagnose and fight mild cases of depression "
+            "by informing your friends that you need care.\n"
+            "You can learn more about me here: http://depressionweakerthan.tech. \n"
+            "If you want, you can just lurk and recieve notifications about your friends' statuses. "
+            "However, I strongly recommend you to add trusted friends and install my browser extension. "
+            "It is a good idea to take care of yourself even if you don't think you could ever get depressed"
+        )
 
         subscriptions = get_all_subscriptions(update.message.from_user.id)
         for subscription in subscriptions:
             update.message.reply_text(
-                'User {} add you as friend'.format(cls.get_username(subscription))
+                'User {} has added you as trusted friend'.format(cls.get_username(subscription))
             )
-        update.message.reply_text(
-            'If someone who added you as friend has depression you will be notified'
-        )
 
         update.message.reply_text(
-            'Tell me your friendns\' usernames in Telegram. '
-            'Be aware, username should start with @. '
-            'Type at least one and then click "Done"'
+            "Now you can tell me username of a person whom you trust. "
+            "They will be notified if you ever get depressed. "
+            "You can add any number of friends, but enter one username at a time. "
         )
 
         return AddFriends.name
@@ -336,3 +369,42 @@ class Controller:
         else:
             friend_username = splited_message[1]
             AddFriends.add_friend(friend_username, bot, update)
+
+    @classmethod
+    def ask_for_photo(cls, bot, job):
+        user_id = job.context['user_id']
+        bot.send_message(user_id, 'Send me a photo, please!')
+
+    @classmethod
+    def grab_stat(cls, bot, job_or_update):
+        if isinstance(job_or_update, Job):
+            user_id = job_or_update.context['user_id']
+        elif isinstance(job_or_update, Updater):
+            user_id = job_or_update.message.from_user.id
+        else:
+            raise ValueError('job_or_update should be Updater or Job')
+        user = User.objects.filter(user_id=user_id).first()
+        login = user.twitter_login
+        if login is not None:
+            today_twitter_score = twitter_score_info(login, deep_days=1)['avg_month_score']
+            user.twitter_month_score *= 29.0 / 30.0
+            user.twitter_month_score += today_twitter_score
+            user.twitter_week_score *= 6.0 / 7.0
+            user.twitter_week_score += today_twitter_score
+
+        # urls = user.url_set.order_by("-ts")
+        urls = get_urls()
+        today_url_score = browser_history_score_info(urls, deep_days=1)['avg_month_score']
+        user.url_month_score *= 29.0 / 30.0
+        user.url_month_score += today_url_score
+        user.url_week_score *= 6.0 / 7.0
+        user.url_week_score += today_url_score
+
+        user.save()
+        logger.info('Got stat for user ' + user.username)
+        is_depressed = detect_depression(
+            user.url_month_score, user.url_week_score,
+            user.twitter_month_score, user.twitter_week_score
+        )
+        if is_depressed:
+            cls.depression_detected(user_id)
