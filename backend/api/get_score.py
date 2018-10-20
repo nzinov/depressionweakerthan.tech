@@ -22,6 +22,7 @@ descr = {
     'NONE': 0
 }
 
+
 def api_sentiment_detection(req_type, content):
     url = "https://api.meaningcloud.com/sentiment-2.1"
     headers = {'content-type': 'application/x-www-form-urlencoded'}
@@ -83,7 +84,7 @@ def get_tweets(user, pages=25):
                         int(tweet.find('._timestamp')[0].attrs['data-time-ms'])/1000.0)
                     interactions = [x.text for x in tweet.find(
                         '.ProfileTweet-actionCount')]
-                    replies = int(interactions[0].split(" ")[0].replace(comma, "").replace(dot,""))
+                    replies = int(interactions[0].split(" ")[0].replace(comma, "").replace(dot, ""))
                     retweets = int(interactions[1].split(" ")[
                                    0].replace(comma, "").replace(dot,""))
                     likes = int(interactions[2].split(" ")[0].replace(comma, "").replace(dot,""))
@@ -173,9 +174,8 @@ def twitter_score_info(user_name, deep_days=30):
 
 
 def browser_history_score_info(history, deep_days=30):
-    br_hist = json.loads(history)
-    urls = [br_hist[i].get('url') for i in range(len(br_hist))]
-    times = [datetime.fromtimestamp(float(br_hist[i].get('ts')) / 1000) for i in range(len(br_hist))]
+    urls = [url_object.url for url_object in history]
+    times = [datetime.fromtimestamp(float(url_object.ts) / 1000) for url_object in history]
 
     br_hist_scores = []
     br_hist_times = []
@@ -243,24 +243,3 @@ def detect_depression(url_month, url_week, twitter_month, twitter_week):
             return True
         else:
             return False
-
-
-# In[317]:
-
-
-#user_name = 'HackneyAbbott'
-#score_info = twitter_score_info(user_name)
-
-
-# In[318]:
-
-
-#score_info
-
-
-# In[319]:
-
-
-#print('average score:', score_info.get('avg_month_score'))
-#plt.plot(score_info.get('avg_week_score'))
-

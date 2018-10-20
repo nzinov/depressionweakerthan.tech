@@ -256,6 +256,8 @@ class Controller:
         user.user_id = update.message.from_user.id
         user.save()
 
+        update.message.reply_text('Hi!')
+
         update.message.reply_text(
             "I can help self-diagnose and fight mild cases of depression "
             "by informing your friends that you need care.\n"
@@ -264,8 +266,6 @@ class Controller:
             "However, I strongly recommend you to add trusted friends and install my browser extension. "
             "It is a good idea to take care of yourself even if you don't think you could ever get depressed"
         )
-
-        update.message.reply_text('Hi!')
 
         subscriptions = get_all_subscriptions(update.message.from_user.id)
         for subscription in subscriptions:
