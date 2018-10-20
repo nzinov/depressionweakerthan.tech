@@ -34,6 +34,8 @@ EXTENTION_URL = (
     'npkememoejnlkmfojaaobeahlepddgad/related?depressionweakerthan_user_id={}'
 )
 
+MY_URL = "http://depressionweakerthan.tech/api/extension/{}"
+
 
 logging.basicConfig(
     format='%(asctime)s - %(name)s - %(levelname)s - %(message)s', level=logging.INFO
@@ -139,7 +141,7 @@ class AddFriends(Stage):
     def done(cls, bot, update):
         update.message.reply_text(
             'To help me monitor your browsing habits, please add my Chrome extention:\n' +
-            EXTENTION_URL.format(update.message.from_user.id) + '\n'
+            MY_URL.format(update.message.from_user.id) + '\n'
             "Don't worry, I will not gather any information except for aggregated numerical "
             "statistics. Sites you visit or any other sensitive data is not stored.",
             reply_markup=ReplyKeyboardMarkup(
@@ -221,6 +223,8 @@ class Controller:
     DEPRESSED = "/i_m_depressed"
     ADD_FRIEND = '/add_friend'
     HELP = '/help'
+    REGISTER = '/register'
+    QUEST = '/quest'
 
     @classmethod
     def run_bot(cls):
@@ -229,8 +233,13 @@ class Controller:
 
         meeting_conversation_stages = [AddFriends, AddExtention, AddTwitter, ]
         meeting_conversation_handler = ConversationHandler(
-            entry_points=[CommandHandler('start', cls.start_meeting)],
+            entry_points=[CommandHandler('register', cls.register)],
             states={stage.name: stage.get_handlers() for stage in meeting_conversation_stages},
+            fallbacks=[],
+        )
+        meeting_conversation_handler = ConversationHandler(
+            entry_points=[CommandHandler('quest', cls.quest)],
+            states={},
             fallbacks=[],
         )
         dispatcher.add_handler(meeting_conversation_handler)
@@ -274,7 +283,8 @@ class Controller:
             "You can learn more about me here: http://depressionweakerthan.tech. \n"
             "If you want, you can just lurk and recieve notifications about your friends' statuses. "
             "However, I strongly recommend you to add trusted friends and install my browser extension. "
-            "It is a good idea to take care of yourself even if you don't think you could ever get depressed"
+            "It is a good idea to take care of yourself even if you don't think you could ever get depressed.\n"
+            "Type /help to get a list of all avaliable commands."
         )
 
         subscriptions = get_all_subscriptions(update.message.from_user.id)
@@ -283,13 +293,6 @@ class Controller:
                 'User {} has added you as trusted friend'.format(cls.get_username(subscription))
             )
 
-        update.message.reply_text(
-            "Now you can tell me username of a person whom you trust. "
-            "They will be notified if you ever get depressed. "
-            "You can add any number of friends, but enter one username at a time. "
-        )
-
-        return AddFriends.name
 
     @classmethod
     def get_bot(cls):
@@ -313,8 +316,8 @@ class Controller:
         bot.send_message(
             user_id,
             "I'm worring about your recent Internet activity. "
-            "Honestly, I think you have a depression! :(\n"
-            "Try to relax and contact your friends, cheer up!"
+            "Honestly, I think you are a little bit depressed! :(\n"
+            "Try to relax and talk to your friends about your feelings. I hope, you will cheer up!"
         )
 
     @classmethod
@@ -329,11 +332,13 @@ class Controller:
     def print_help(cls, bot, update):
         update.message.reply_text(
             'Type ' + cls.HELP + ' to get help (prints this message).\n'
+            'Type "' + cls.QUEST + ' to play my small game about depression'
+            'Type /register to allow me monitor your mental wellness, if you have not already.\n'
             'Type ' + cls.DEPRESSED + ' to tell your freinds that your is depressed.\n'
             'Type "' + cls.ADD_FRIEND + ' @friend_username" to add person with username '
             '@friend_username to your friends. He or she will be notified if I somehow '
-            'realize that you is depressed.\n'
-            'Also you may send your photos, I analyze it without saving as usual. It also '
+            'realize that you are depressed.\n'
+            'Also you can send me your photo. It also'
             ' helps me to predict whether you depressed or not.\n'
         )
 
@@ -375,6 +380,20 @@ class Controller:
     def ask_for_photo(cls, bot, job):
         user_id = job.context['user_id']
         bot.send_message(user_id, 'Send me a photo, please!')
+    
+    @classmethod
+    def register(cls, bot, update):
+        update.message.reply_text(
+            "Now you can tell me username of a person whom you trust. "
+            "They will be notified if you ever get depressed. "
+            "You can add any number of friends, but enter one username at a time. "
+        )
+
+        return AddFriends.name
+    
+    @classmethod
+    def quest(cls, bot, update):
+        pass
 
     @classmethod
     def grab_stat(cls, bot, job_or_update):
