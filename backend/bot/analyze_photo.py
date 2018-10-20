@@ -1,4 +1,4 @@
-from settings import SUBSCRIPTION_KEY
+from .settings import SUBSCRIPTION_KEY
 import requests
 
 

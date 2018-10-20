@@ -25,7 +25,7 @@ SECRET_KEY = 'qz39-2#)3v-p*3@a=4imqfoo=0%ubp^w7e0blvx2+^=f660^l7'
 # SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = True
 
-ALLOWED_HOSTS = ['localhost']
+ALLOWED_HOSTS = ['localhost', 'depressionweakerthan.tech']
 
 
 # Application definition

@@ -5,7 +5,7 @@ from telegram.ext import (
 from itertools import count
 import random
 import logging
-from analyze_photo import analyze_photo
+from .analyze_photo import analyze_photo
 
 # from database import add_subscriber, get_subscribers_count, get_user_id_by_username,
 # get_all_subscriptions
