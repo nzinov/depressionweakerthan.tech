@@ -37,7 +37,7 @@ def add_twitter_info(user_id, login, res):
     user = User.objects.filter(user_id=user_id).first()
     user.twitter_login = login
     user.twitter_month_score = res['avg_month_score']
-    user.twitter_week_score = res['avg_week_score']
+    user.twitter_week_score = res['avg_week_score'][-1]
     user.save()
 
 
@@ -179,7 +179,7 @@ class AddExtention(Stage):
         # urls = user.url_set.order_by("-ts")
         urls = get_urls()
         result = browser_history_score_info(urls)
-        user.url_week_score = result['avg_week_score']
+        user.url_week_score = result['avg_week_score'][-1]
         user.url_month_score = result['avg_month_score']
         user.save()
         return AddTwitter.name
@@ -200,13 +200,8 @@ class AddTwitter(Stage):
         ]
 
     @classmethod
-    def set_controller(cls, controller):
-        cls._controller = controller
-
-    @classmethod
     def skip(cls, bot, update):
         update.message.reply_text(cls.end_message)
-        cls.run_monitorings(update.message.from_user.id)
         return ConversationHandler.END
 
     @classmethod
@@ -218,14 +213,7 @@ class AddTwitter(Stage):
         logger.info('Got twitter depression score of user {}: {}'.format(user.name, result))
         add_twitter_info(user.id, login, result)
         update.message.reply_text(cls.end_message, reply_markup=ReplyKeyboardRemove())
-        cls.run_monitorings(user.id)
         return ConversationHandler.END
-
-    @classmethod
-    def run_monitorings(cls, user_id):
-        logger.info('Run monitorings for user with id=' + str(user_id))
-        Job(cls._controller.ask_for_photo, interval=timedelta(0, 20), context={'user_id': user_id})
-        Job(cls._controller.grab_stat, interval=timedelta(1), context={'user_id': user_id})
 
 
 class Controller:
@@ -255,6 +243,17 @@ class Controller:
         dispatcher.add_handler(CommandHandler(cls.ADD_FRIEND[1:], cls.add_friend))
         dispatcher.add_handler(MessageHandler(Filters.photo, cls.analyze_photo))
         dispatcher.add_handler(CommandHandler('/_grab_stat', cls.grab_stat))
+
+        for user_object in User.objects.all():
+            if not user_object.activated:
+                continue
+            user_id = user_object.user_id
+            logger.info('Run monitorings for user with id=' + str(user_id))
+            Job(
+                cls._controller.ask_for_photo, interval=timedelta(0, 20),
+                context={'user_id': user_id}
+            )
+            Job(cls._controller.grab_stat, interval=timedelta(1), context={'user_id': user_id})
 
         cls._updater.start_polling()
         cls._updater.idle()
