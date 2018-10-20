@@ -226,7 +226,6 @@ class Controller:
         cls._updater = Updater(TOKEN)
         dispatcher = cls._updater.dispatcher
 
-        AddTwitter.set_controller(cls)
         meeting_conversation_stages = [AddFriends, AddExtention, AddTwitter, ]
         meeting_conversation_handler = ConversationHandler(
             entry_points=[CommandHandler('start', cls.start_meeting)],
