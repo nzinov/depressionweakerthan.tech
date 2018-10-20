@@ -9,7 +9,6 @@ import re
 from requests_html import HTMLSession, HTML
 from datetime import datetime, timedelta
 import pandas as pd
-import matplotlib.pyplot as plt
 import numpy as np
 import json
 from collections import defaultdict
