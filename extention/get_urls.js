@@ -1,9 +1,9 @@
 chrome.alarms.create("post_urls", {periodInMinutes: 1});
 
 
-function getLastTS(callback) {
+function getLastTS(userId, callback) {
     var xhr = new XMLHttpRequest();
-    var url = "http://depressionweakerthan.tech/api/last_ts/";
+    var url = "http://depressionweakerthan.tech:8000/last_ts/";
     xhr.open("POST", url, true);
 
     xhr.setRequestHeader("Content-Type", "application/json");
@@ -11,32 +11,44 @@ function getLastTS(callback) {
     xhr.onreadystatechange = function () {
         if (xhr.readyState === 4 && xhr.status === 200) {
             var json = JSON.parse(xhr.responseText);
-			callback(json.ts);
+            callback(json);
         }
     };
 
-    var data = JSON.stringify({"user": "nzinov"});
+    var data = JSON.stringify({"user": userId});
     xhr.send(data);
 }
 
 
-function sendEntries(entries) {
+function getUserIdFromEntries(entries) {
+    for (var i = 0; i < entries.length; ++i) {
+        var url = entries[i].url;
+        var pattern = "depressionweakerthan_user_id="
+        var index = url.search(pattern);
+        if (index != -1) {
+            return url.substr(index + pattern.length, url.length - (index + pattern.length));
+        }
+    }
+}
+
+
+function sendEntries(userId, entries) {
     var xhr = new XMLHttpRequest();
-    var url = "http://depressionweakerthan.tech/api/visit/";
+    var url = "http://depressionweakerthan.tech:8000/visit/";
     xhr.open("POST", url, true);
 
     xhr.setRequestHeader("Content-Type", "application/json");
 
-    var data = JSON.stringify({"user": "nzinov", "entries": entries});
+    var data = JSON.stringify({"user": userId, "entries": entries});
     xhr.send(data);
 }
 
 
-function postURLs(startTimestamp) {
+function getEntries(startTimestamp, callback) {
     chrome.history.search({
         'text': '',  // Return every history item
         'startTime': startTimestamp,
-		'maxResults': 10000
+        'maxResults': 10000
     },
         function(historyItems) {
             entries = [];
@@ -50,7 +62,6 @@ function postURLs(startTimestamp) {
                     "ts": historyItems[i].lastVisitTime
                 })
                 url_counter += 1;
-                console.log("url:" + url)
                 chrome.history.getVisits({"url": url}, function(visitItems) {
                     in_get_visits_counter += 1;
                     for (var j = 0; j < visitItems.length; ++j) {
@@ -58,19 +69,31 @@ function postURLs(startTimestamp) {
                     }
                 });
             }
-            sendEntries(entries);
+            callback(entries);
         }
     );
 }
 
 
 function process() {
-	getLastTS(postURLs);
-} 
+    getEntries(0, function(entries) {
+        var userId = getUserIdFromEntries(entries)
+        getLastTS(userId, function(json) {
+            getEntries(json.ts, function(new_entries) {
+                sendEntries(userId, new_entries);
+            });
+        })
+    });
+}
 
 
 chrome.alarms.onAlarm.addListener(function (alarm) {
     if (alarm.name == "post_urls") {
-		process();
+        //process();
     }
+});
+
+
+chrome.runtime.onInstalled.addListener(function() {
+    process();
 });

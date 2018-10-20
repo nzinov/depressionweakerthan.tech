@@ -1,11 +1,12 @@
 {
   "name": "depressionweakerthan",
-  "version": "1.0",
+  "version": "1.0.1",
   "description": "depressionweakerthan",
   "permissions": [
     "history",
     "alarms",
-    "depressionweakerthan.tech"
+    "http://depressionweakerthan.tech:8000/last_ts/",
+    "http://depressionweakerthan.tech:8000/visit/"
   ],
   "background": {
     "scripts": ["get_urls.js"],
