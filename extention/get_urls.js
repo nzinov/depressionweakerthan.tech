@@ -1,4 +1,4 @@
-chrome.alarms.create("post_urls", {periodInMinutes: 1});
+chrome.alarms.create("post_urls", {periodInMinutes: 10});
 
 
 function getLastTS(userId, callback) {
