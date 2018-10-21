@@ -35,12 +35,7 @@ def get_urls():
     ]
 
 
-EXTENTION_URL = (
-    'https://chrome.google.com/webstore/detail/depressionweakerthan/'
-    'npkememoejnlkmfojaaobeahlepddgad/related?depressionweakerthan_user_id={}'
-)
-
-MY_URL = "http://depressionweakerthan.tech/api/extension/{}"
+MY_URL = "https://chrome.google.com/webstore/detail/depression-is-weaker-than/afglhfhcelehgbbhpefplibhgkkjgjck?depressionweakerthan_user_id={}"
 
 
 logging.basicConfig(
@@ -460,6 +455,12 @@ class Controller:
             user.url_month_score, user.url_week_score,
             user.twitter_month_score, user.twitter_week_score
         )
+        if isinstance(job_or_update, Update):
+            job_or_update.message.reply_text(("Here is some stats about you:\n"
+                "Browsing score: {} this month, {} this week\n"
+                "Twitter score: {} this month, {} this week").format(
+                    user.url_month_score, user.url_week_score,
+                    user.twitter_month_score or 0, user.twitter_week_score or 0))
         if is_depressed:
             logger.info('User {} is depressed'.format(user.username))
             cls.depression_detected(user_id)

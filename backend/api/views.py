@@ -4,8 +4,7 @@ from .models import User, Url
 import json
 
 EXTENTION_URL = (
-    'https://chrome.google.com/webstore/detail/depressionweakerthan/'
-    'npkememoejnlkmfojaaobeahlepddgad/related'
+    'https://chrome.google.com/webstore/detail/depression-is-weaker-than/afglhfhcelehgbbhpefplibhgkkjgjck'
 )
 
 # Create your views here.
