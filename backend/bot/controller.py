@@ -178,8 +178,8 @@ class AddExtention(Stage):
             reply_markup=ReplyKeyboardMarkup([[AddTwitter.skip_message]], one_time_keyboard=True)
         )
         user_object = User.objects.get(user_id=update.message.from_user.id)
-        # urls = user_object.url_set.order_by("-ts")
-        urls = get_urls()
+        urls = user_object.url_set.order_by("-ts")
+        # urls = get_urls()
         result = browser_history_score_info(urls)
         logger.info('Got user {} browser history, stats: {}'.format(user_object.username, result))
         user_object.url_week_score = result['avg_week_score'][-1]
@@ -427,17 +427,17 @@ class Controller:
         if login is not None:
             today_twitter_score = twitter_score_info(login, deep_days=1)['avg_month_score']
             user.twitter_month_score *= 29.0 / 30.0
-            user.twitter_month_score += today_twitter_score
+            user.twitter_month_score += today_twitter_score / 30.0
             user.twitter_week_score *= 6.0 / 7.0
-            user.twitter_week_score += today_twitter_score
+            user.twitter_week_score += today_twitter_score / 7.0
 
-        # urls = user.url_set.order_by("-ts")
-        urls = get_urls()
+        urls = user.url_set.order_by("-ts")
+        # urls = get_urls()
         today_url_score = browser_history_score_info(urls, deep_days=1)['avg_month_score']
         user.url_month_score *= 29.0 / 30.0
-        user.url_month_score += today_url_score
+        user.url_month_score += today_url_score / 30.0
         user.url_week_score *= 6.0 / 7.0
-        user.url_week_score += today_url_score
+        user.url_week_score += today_url_score / 7.0
 
         user.save()
         logger.info('Got stat for user ' + user.username)
