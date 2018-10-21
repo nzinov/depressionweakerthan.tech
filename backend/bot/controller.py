@@ -322,8 +322,8 @@ class Controller:
 
     @classmethod
     def depression_detected(cls, user_id):
-        cls.notify_friends_about_depression(cls, user_id)
-        cls.notify_user_about_depression(cls, user_id)
+        cls.notify_friends_about_depression(user_id)
+        cls.notify_user_about_depression(user_id)
 
     @classmethod
     def notify_user_about_depression(cls, user_id):
