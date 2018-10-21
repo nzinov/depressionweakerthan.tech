@@ -1,4 +1,5 @@
 from telegram import ReplyKeyboardMarkup, ReplyKeyboardRemove
+from telegram.update import Update
 from telegram.utils.promise import Promise
 from telegram.ext import (
     Updater, ConversationHandler, CommandHandler, MessageHandler, Filters, RegexHandler,
@@ -415,11 +416,9 @@ class Controller:
 
     @classmethod
     def grab_stat(cls, bot, job_or_update):
-        print(job_or_update)
-        print(type(job_or_update))
         if isinstance(job_or_update, Job):
             user_id = job_or_update.context['user_id']
-        elif isinstance(job_or_update, Updater):
+        elif isinstance(job_or_update, Update):
             user_id = job_or_update.message.from_user.id
         else:
             raise ValueError('job_or_update should be Updater or Job')
