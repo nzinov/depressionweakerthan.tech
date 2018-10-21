@@ -85,35 +85,34 @@ class AddFriends(Stage):
         user = update.message.from_user
         if friend_username[0] != '@':
             friend_username = '@' + friend_username
+        logger.info('User {} want to add friend {}'.format(user.id, friend_username))
+        friend = User.objects.filter(username=friend_username).first()
+        if friend is None:
+            friend = User(username=friend_username)
+            friend.save()
+        if friend.user_id is None:
+            update.message.reply_text(
+                ("I don't know {} yet. Please share link "
+                "t.me/depression_weaker_than_tech_bot with them. "
+                "When they register, I will be able to notify them of your status").format(friend_username)
+            )
+            logger.info('Not found friend with username: {}'.format(friend_username))
         else:
-            logger.info('User {} want to add friend {}'.format(user.id, friend_username))
-            friend = User.objects.filter(username=friend_username).first()
-            if friend is None:
-                friend = User(username=friend_username)
-                friend.save()
-            if friend.user_id is None:
-                update.message.reply_text(
-                    ("I don't know {} yet. Please share link "
-                    "t.me/depression_weaker_than_tech_bot with them. "
-                    "When they register, I will be able to notify them of your status").format(friend_username)
-                )
-                logger.info('Not found friend with username: {}'.format(friend_username))
-            else:
-                add_friend_message = (
-                    'User {} has added you to their list of trusted friends. '
-                    'Now I will drop you a message should they need your attention and care'
-                )
-                bot.send_message(
-                    friend.user_id,
-                    add_friend_message.format(user.name)
-                )
-                update.message.reply_text(
-                    'User {} was added to list of your trusted friends.'.format(friend_username)
-                )
+            add_friend_message = (
+                'User {} has added you to their list of trusted friends. '
+                'Now I will drop you a message should they need your attention and care'
+            )
+            bot.send_message(
+                friend.user_id,
+                add_friend_message.format(user.name)
+            )
+            update.message.reply_text(
+                'User {} was added to list of your trusted friends.'.format(friend_username)
+            )
 
-                logger.info('Found friend id: ' + str(friend.user_id))
-            User.objects.get(user_id=user.id).trusted.add(friend)
-            return True
+            logger.info('Found friend id: ' + str(friend.user_id))
+        User.objects.get(user_id=user.id).trusted.add(friend)
+        return True
 
     @classmethod
     def add_subscriber(cls, bot, update):
