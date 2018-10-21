@@ -180,7 +180,6 @@ class AddExtention(Stage):
         # urls = user_object.url_set.order_by("-ts")
         urls = get_urls()
         result = browser_history_score_info(urls)
-        logger.info('len of week conv ' + str(len(result['avg_week_score'])))
         logger.info('Got user {} browser history, stats: {}'.format(user_object.username, result))
         user_object.url_week_score = result['avg_week_score'][-1]
         user_object.url_month_score = result['avg_month_score']
@@ -397,6 +396,7 @@ class Controller:
     @classmethod
     def ask_for_photo(cls, bot, job):
         user_id = job.context['user_id']
+        logger.info('Send photo request to user with id=' + str(user_id))
         bot.send_message(user_id, 'Send me a photo, please!')
 
     @classmethod
@@ -415,6 +415,8 @@ class Controller:
 
     @classmethod
     def grab_stat(cls, bot, job_or_update):
+        print(job_or_update)
+        print(type(job_or_update))
         if isinstance(job_or_update, Job):
             user_id = job_or_update.context['user_id']
         elif isinstance(job_or_update, Updater):

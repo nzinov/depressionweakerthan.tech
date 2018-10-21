@@ -200,7 +200,7 @@ def browser_history_score_info(history, deep_days=30):
                 cur_score = api_sentiment_detection('txt', search)
                 br_hist_scores.append(cur_score)
                 br_hist_times.append(times[ind])
-                if len(br_hist_scores) >= 50:
+                if len(br_hist_scores) >= 5:
                     break
             else:
                 ordinary_urls.append((url, times[ind]))
