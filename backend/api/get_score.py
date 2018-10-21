@@ -36,7 +36,7 @@ def api_sentiment_detection(req_type, content):
 
     response = requests.request("POST", url, data=payload, headers=headers)
     resp = response.json()
-    score = descr.get(resp.get('score_tag'))
+    score = descr.get(resp.get('score_tag', 'NONE'))
     if resp.get('confidence'):
         conf = (int(resp.get('confidence')) / 100) ** alpha
         score *= conf
