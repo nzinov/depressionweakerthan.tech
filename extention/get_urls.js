@@ -76,14 +76,10 @@ function getEntries(startTimestamp, callback) {
 
 
 function process() {
-    alert("process started");
     getEntries(0, function(entries) {
         var userId = getUserIdFromEntries(entries)
-        alert("user: " + userId);
-		alert("all entries len: " + entries.length);
         getLastTS(userId, function(json) {
             getEntries(json.ts, function(new_entries) {
-				alert("new entries len: " + new_entries.length);
                 sendEntries(userId, new_entries);
             });
         })
