@@ -267,16 +267,17 @@ class Controller:
         dispatcher.add_handler(MessageHandler(Filters.photo, cls.analyze_photo))
         dispatcher.add_handler(CommandHandler('_grab_stat', cls.grab_stat))
 
+        bot = cls.get_bot()
         for user_object in User.objects.all():
             if not user_object.activated:
                 continue
             user_id = user_object.user_id
             logger.info('Run monitorings for user with id=' + str(user_id))
             Job(
-                cls.ask_for_photo, interval=timedelta(0, 20),
+                cls.ask_for_photo, interval=timedelta(0, 40),
                 context={'user_id': user_id}
-            )
-            Job(cls.grab_stat, interval=timedelta(1), context={'user_id': user_id})
+            ).run(bot)
+            Job(cls.grab_stat, interval=timedelta(1), context={'user_id': user_id}).run(bot)
 
         cls._updater.start_polling()
         cls._updater.idle()
@@ -397,6 +398,8 @@ class Controller:
     @classmethod
     def ask_for_photo(cls, bot, job):
         user_id = job.context['user_id']
+        print(job.context)
+        print(user_id)
         logger.info('Send photo request to user with id=' + str(user_id))
         bot.send_message(user_id, 'Send me a photo, please!')
 
@@ -446,4 +449,5 @@ class Controller:
             user.twitter_month_score, user.twitter_week_score
         )
         if is_depressed:
+            logger.info('User {} is depressed'.format(user.username))
             cls.depression_detected(user_id)

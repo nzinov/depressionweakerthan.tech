@@ -197,6 +197,8 @@ def browser_history_score_info(history, deep_days=30):
 
         if times[ind] > check_date:
             if search:
+                if re.search('^%[A-F0-9][A-F0-9]%[A-F0-9][A-F0-9]', search) is not None:
+                    continue
                 cur_score = api_sentiment_detection('txt', search)
                 br_hist_scores.append(cur_score)
                 br_hist_times.append(times[ind])
