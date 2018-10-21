@@ -237,6 +237,7 @@ class Controller:
             states={stage.name: stage.get_handlers() for stage in meeting_conversation_stages},
             fallbacks=[],
         )
+        dispatcher.add_handler(meeting_conversation_handler)
         meeting_conversation_handler = ConversationHandler(
             entry_points=[CommandHandler('quest', cls.quest)],
             states={},
@@ -248,10 +249,11 @@ class Controller:
             cls.DEPRESSED[1:],
             lambda bot, update: cls.notify_friends_about_depression(update.message.from_user.id)
         ))
+        dispatcher.add_handler(CommandHandler('start', cls.start_meeting))
         dispatcher.add_handler(CommandHandler(cls.HELP[1:], cls.print_help))
         dispatcher.add_handler(CommandHandler(cls.ADD_FRIEND[1:], cls.add_friend))
         dispatcher.add_handler(MessageHandler(Filters.photo, cls.analyze_photo))
-        dispatcher.add_handler(CommandHandler('/_grab_stat', cls.grab_stat))
+        dispatcher.add_handler(CommandHandler('_grab_stat', cls.grab_stat))
 
         for user_object in User.objects.all():
             if not user_object.activated:
@@ -284,7 +286,6 @@ class Controller:
             "If you want, you can just lurk and recieve notifications about your friends' statuses. "
             "However, I strongly recommend you to add trusted friends and install my browser extension. "
             "It is a good idea to take care of yourself even if you don't think you could ever get depressed.\n"
-            "Type /help to get a list of all avaliable commands."
         )
 
         subscriptions = get_all_subscriptions(update.message.from_user.id)
@@ -292,6 +293,7 @@ class Controller:
             update.message.reply_text(
                 'User {} has added you as trusted friend'.format(cls.get_username(subscription))
             )
+        update.message.reply_text("Type /help to get a list of all avaliable commands.")
 
 
     @classmethod
@@ -326,13 +328,14 @@ class Controller:
         username = cls.get_username(user_id)
         for subscriber in get_all_subscribers(user_id):
             # TODO: write message
-            bot.send_message(subscriber, 'Your friend, ' + username + ', is depressed!')
+            bot.send_message(subscriber, 'I noticed that your friend, ' + username + ', is feeling a little bit unhappy lately. '
+                             'You should talk to them and ask about their feelings.')
 
     @classmethod
     def print_help(cls, bot, update):
         update.message.reply_text(
             'Type ' + cls.HELP + ' to get help (prints this message).\n'
-            'Type "' + cls.QUEST + ' to play my small game about depression'
+            'Type "' + cls.QUEST + ' to play my small game about depression\n'
             'Type /register to allow me monitor your mental wellness, if you have not already.\n'
             'Type ' + cls.DEPRESSED + ' to tell your freinds that your is depressed.\n'
             'Type "' + cls.ADD_FRIEND + ' @friend_username" to add person with username '
