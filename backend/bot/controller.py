@@ -207,8 +207,14 @@ class AddTwitter(Stage):
         update.message.reply_text(cls.end_message)
         user_id = update.message.from_user.id
         user = User.objects.filter(user_id=user_id).first()
-        user.activated = True
-        user.save()
+        if not user.activated:
+            Job(
+                Controller.ask_for_photo, interval=timedelta(0, 40),
+                context={'user_id': user_id}
+            ).run(bot)
+            Job(Controller.grab_stat, interval=timedelta(1), context={'user_id': user_id}).run(bot)
+            user.activated = True
+            user.save()
         return ConversationHandler.END
 
     @classmethod
@@ -225,8 +231,14 @@ class AddTwitter(Stage):
         user.save()
         logger.info('Got twitter depression score of user {}: {}'.format(user.username, res))
         update.message.reply_text(cls.end_message, reply_markup=ReplyKeyboardRemove())
-        user.activated = True
-        user.save()
+        if not user.activated:
+            Job(
+                Controller.ask_for_photo, interval=timedelta(0, 40),
+                context={'user_id': user_id}
+            ).run(bot)
+            Job(Controller.grab_stat, interval=timedelta(1), context={'user_id': user_id}).run(bot)
+            user.activated = True
+            user.save()
         return ConversationHandler.END
 
 
