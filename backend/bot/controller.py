@@ -17,6 +17,7 @@ import django
 django.setup()
 from api.models import User
 from collections import namedtuple
+from .quest import *
 Url = namedtuple('Url', ['url', 'ts'])
 
 
@@ -190,6 +191,7 @@ class AddTwitter(Stage):
         "That's all for now, thanks! I will monitor your activity and ping your friends if I think you need extra care."
     )
 
+
     @classmethod
     def get_handlers(cls):
         return [
@@ -244,6 +246,9 @@ class Controller:
     REGISTER = '/register'
     QUEST = '/quest'
 
+    STATE = {
+    }
+
     @classmethod
     def run_bot(cls):
         cls._updater = Updater(TOKEN)
@@ -258,8 +263,8 @@ class Controller:
         dispatcher.add_handler(meeting_conversation_handler)
 
         quest_conversation_handler = ConversationHandler(
-            entry_points=[CommandHandler('quest', cls.quest)],
-            states={},
+            entry_points=[CommandHandler('quest', cls.start_quest)],
+            states={"select": [MessageHandler(Filters.text, cls.select_perspective)], "quest": [MessageHandler(Filters.text, cls.quest)]},
             fallbacks=[],
         )
         dispatcher.add_handler(quest_conversation_handler)
@@ -421,8 +426,40 @@ class Controller:
         return AddFriends.name
 
     @classmethod
+    def start_quest(cls, bot, update):
+        game = Game()
+        cls.STATE[update.message.from_user.id] = game
+        update.message.reply_text(game.start(), reply_markup=ReplyKeyboardMarkup([["Healthy"], ["Depressive"]], one_time_keyboard=True))
+        return "select"
+
+    @classmethod
+    def select_perspective(cls, bot, update):
+        desc = cls.STATE[update.message.from_user.id].select_perspective(update.message.text)
+        update.message.reply_text("Let's start the game")
+        update.message.reply_text(desc)
+        update.message.reply_text("Select, where you want to spend next couple of hours",
+                                  reply_markup=ReplyKeyboardMarkup([["Bed"], ["Kitchen"], ["School"]], one_time_keyboard=True))
+        return "quest"
+
+    @classmethod
     def quest(cls, bot, update):
-        pass
+        desc = cls.STATE[update.message.from_user.id].take_move(update.message.text)
+        game = cls.STATE[update.message.from_user.id]
+        if cls.STATE[update.message.from_user.id].time == 3:
+            update.message.reply_text(desc)
+            if game.finished:
+                update.message.reply_text("Thank you for playing! You can see now that depression can affect your state. You should register now to get help when you need it.")
+                return -1
+            else:
+                update.message.reply_text("Thats all! Now it is time to live the same day from the other perspective.")
+                game.finished = 1
+                game.state = "Bed"
+                game.time = 0
+                game.positive = not game.positive
+        update.message.reply_text(game.get_description())
+        update.message.reply_text("Select, where you want to spend next couple of hours",
+                                  reply_markup=ReplyKeyboardMarkup([["Bed"], ["Kitchen"], ["School"]], one_time_keyboard=True))
+        return "quest"
 
     @classmethod
     def grab_stat(cls, bot, job_or_update):

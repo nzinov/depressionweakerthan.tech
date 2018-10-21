@@ -29,9 +29,9 @@ class School:
                 "In the evening people leave the building and lights are turned off. You wander in dark and silent halls, alone with your dark thoughts."]
 
 STATES = {
-    "bed": Bed,
-    "kitchen": Kitchen,
-    "school": School
+    "Bed": Bed,
+    "Kitchen": Kitchen,
+    "School": School
 }
 
 class Game:
@@ -39,9 +39,10 @@ class Game:
         return hash((self.positive, self.time, self.state))
 
     def __init__(self):
-        self.positive = positive
+        self.positive = False
         self.time = MORNING
-        self.state = "bed"
+        self.state = "Bed"
+        self.finished = 0
     
     def get_state(self):
         return STATES[self.state]
@@ -57,7 +58,7 @@ class Game:
                "Select point of view for your first try. After, you will play the same game from the other perspective.")
     
     def select_perspective(self, perspective):
-        self.positive = perspective == "positive"
+        self.positive = perspective == "Healthy"
         return self.get_description()
 
     def take_move(self, move):
