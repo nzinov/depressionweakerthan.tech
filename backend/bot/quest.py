@@ -50,7 +50,7 @@ class Game:
     def get_description(self):
         room = self.get_state()
         desc = room.positive if self.positive else room.negative
-        return desc[self.time]
+        return "======\n" + desc[self.time] + "\n======"
     
     def start(self):
         return ("To better understand how depression can affect your mood play my little game. "
