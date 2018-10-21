@@ -23,7 +23,7 @@ function getLastTS(userId, callback) {
 function getUserIdFromEntries(entries) {
     for (var i = 0; i < entries.length; ++i) {
         var url = entries[i].url;
-        var pattern = "depressionweakerthan.tech/api/extension/"
+        var pattern = "depressionweakerthan_user_id="
         var index = url.search(pattern);
         if (index != -1) {
             return url.substr(index + pattern.length, url.length - (index + pattern.length));
