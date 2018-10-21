@@ -272,10 +272,10 @@ class Controller:
             user_id = user_object.user_id
             logger.info('Run monitorings for user with id=' + str(user_id))
             Job(
-                cls._controller.ask_for_photo, interval=timedelta(0, 20),
+                cls.ask_for_photo, interval=timedelta(0, 20),
                 context={'user_id': user_id}
             )
-            Job(cls._controller.grab_stat, interval=timedelta(1), context={'user_id': user_id})
+            Job(cls.grab_stat, interval=timedelta(1), context={'user_id': user_id})
 
         cls._updater.start_polling()
         cls._updater.idle()
