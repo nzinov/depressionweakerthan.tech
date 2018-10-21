@@ -69,11 +69,8 @@ def get_tweets(user, pages=25):
             except KeyError:
                 raise ValueError(
                     f'Oops! Either "{user}" does not exist or is private.')
-            except Exception:
-                pages -= 1
-                if pages == 0:
-                    raise
-                continue
+            except lxml.etree.ParserError:
+                break
 
             comma = ","
             dot = "."
