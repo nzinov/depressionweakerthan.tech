@@ -107,6 +107,9 @@ class AddFriends(Stage):
                     friend.user_id,
                     add_friend_message.format(user.name)
                 )
+                update.message.reply_text(
+                    'User {} was added to list of your trusted friends.'.format(friend_username)
+                )
 
                 logger.info('Found friend id: ' + str(friend.user_id))
             User.objects.get(user_id=user.id).trusted.add(friend)
