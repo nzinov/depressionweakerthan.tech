@@ -1,4 +1,5 @@
 from telegram import ReplyKeyboardMarkup, ReplyKeyboardRemove
+from telegram.update import Update
 from telegram.utils.promise import Promise
 from telegram.ext import (
     Updater, ConversationHandler, CommandHandler, MessageHandler, Filters, RegexHandler,
@@ -22,6 +23,11 @@ Url = namedtuple('Url', ['url', 'ts'])
 def get_urls():
     return [
         Url(url='https://www.google.es/search?hl=ru&source=hp&ei=yqjLW4bvCYPqrgSNrLL4CA&q=i+wanna+dance+with+somebody+and+be+happy+I+happy&oq=i+wanna+dance+with+somebody+and+be+happy+I+happy&gs_l=psy-ab.3..33i160k1l2.78913.95588.0.97926.37.32.4.1.1.0.138.3109.16j15.31.0....0...1c.1.64.psy-ab..1.35.3014...0j0i22i30k1j0i19k1j0i22i30i19k1j33i22i29i30k1j33i21k1.0.Qpf975be7AE', ts=1540048662161.8308),
+        Url(url='https://www.google.es/search?hl=ru&source=hp&ei=yqjLW4bvCYPqrgSNrLL4CA&q=i+dance+with+somebody+and+be+happy+I+happy&oq=i+wanna+dance+with+somebody+and+be+happy+I+happy&gs_l=psy-ab.3..33i160k1l2.78913.95588.0.97926.37.32.4.1.1.0.138.3109.16j15.31.0....0...1c.1.64.psy-ab..1.35.3014...0j0i22i30k1j0i19k1j0i22i30i19k1j33i22i29i30k1j33i21k1.0.Qpf975be7AE', ts=1540048662161.8308),
+        Url(url='https://www.google.es/search?hl=ru&source=hp&ei=yqjLW4bvCYPqrgSNrLL4CA&q=i+wanna+sing+with+somebody+and+be+happy+I+happy&oq=i+wanna+dance+with+somebody+and+be+happy+I+happy&gs_l=psy-ab.3..33i160k1l2.78913.95588.0.97926.37.32.4.1.1.0.138.3109.16j15.31.0....0...1c.1.64.psy-ab..1.35.3014...0j0i22i30k1j0i19k1j0i22i30i19k1j33i22i29i30k1j33i21k1.0.Qpf975be7AE', ts=1540048662161.8308),
+        Url(url='https://www.google.es/search?hl=ru&source=hp&ei=yqjLW4bvCYPqrgSNrLL4CA&q=i+believe+in+love&oq=i+wanna+dance+with+somebody+and+be+happy+I+happy&gs_l=psy-ab.3..33i160k1l2.78913.95588.0.97926.37.32.4.1.1.0.138.3109.16j15.31.0....0...1c.1.64.psy-ab..1.35.3014...0j0i22i30k1j0i19k1j0i22i30i19k1j33i22i29i30k1j33i21k1.0.Qpf975be7AE', ts=1540048662161.8308),
+        Url(url='https://www.google.es/search?hl=ru&source=hp&ei=yqjLW4bvCYPqrgSNrLL4CA&q=i+wanna+swim&oq=i+wanna+dance+with+somebody+and+be+happy+I+happy&gs_l=psy-ab.3..33i160k1l2.78913.95588.0.97926.37.32.4.1.1.0.138.3109.16j15.31.0....0...1c.1.64.psy-ab..1.35.3014...0j0i22i30k1j0i19k1j0i22i30i19k1j33i22i29i30k1j33i21k1.0.Qpf975be7AE', ts=1540048662161.8308),
+        Url(url='https://www.google.es/search?hl=ru&source=hp&ei=yqjLW4bvCYPqrgSNrLL4CA&q=i+love+my+mom&oq=i+wanna+dance+with+somebody+and+be+happy+I+happy&gs_l=psy-ab.3..33i160k1l2.78913.95588.0.97926.37.32.4.1.1.0.138.3109.16j15.31.0....0...1c.1.64.psy-ab..1.35.3014...0j0i22i30k1j0i19k1j0i22i30i19k1j33i22i29i30k1j33i21k1.0.Qpf975be7AE', ts=1540048662161.8308),
         Url(url='https://www.charliechaplin.com/it/articles/42-Smile-Lyrics', ts=1540148662161.8308),
         Url(url='https://en.wikipedia.org/wiki/Happiness', ts=1540047662161.8308),
         Url(url='https://en.wikipedia.org/wiki/Lions', ts=1540047362161.8308),
@@ -172,10 +178,9 @@ class AddExtention(Stage):
             reply_markup=ReplyKeyboardMarkup([[AddTwitter.skip_message]], one_time_keyboard=True)
         )
         user_object = User.objects.get(user_id=update.message.from_user.id)
-        # urls = user_object.url_set.order_by("-ts")
-        urls = get_urls()
+        urls = user_object.url_set.order_by("-ts")
+        # urls = get_urls()
         result = browser_history_score_info(urls)
-        logger.info('len of week conv ' + str(len(result['avg_week_score'])))
         logger.info('Got user {} browser history, stats: {}'.format(user_object.username, result))
         user_object.url_week_score = result['avg_week_score'][-1]
         user_object.url_month_score = result['avg_month_score']
@@ -200,6 +205,16 @@ class AddTwitter(Stage):
     @classmethod
     def skip(cls, bot, update):
         update.message.reply_text(cls.end_message)
+        user_id = update.message.from_user.id
+        user = User.objects.filter(user_id=user_id).first()
+        if not user.activated:
+            Job(
+                Controller.ask_for_photo, interval=timedelta(0, 40),
+                context={'user_id': user_id}
+            ).run(bot)
+            Job(Controller.grab_stat, interval=timedelta(1), context={'user_id': user_id}).run(bot)
+            user.activated = True
+            user.save()
         return ConversationHandler.END
 
     @classmethod
@@ -216,6 +231,14 @@ class AddTwitter(Stage):
         user.save()
         logger.info('Got twitter depression score of user {}: {}'.format(user.username, res))
         update.message.reply_text(cls.end_message, reply_markup=ReplyKeyboardRemove())
+        if not user.activated:
+            Job(
+                Controller.ask_for_photo, interval=timedelta(0, 40),
+                context={'user_id': user_id}
+            ).run(bot)
+            Job(Controller.grab_stat, interval=timedelta(1), context={'user_id': user_id}).run(bot)
+            user.activated = True
+            user.save()
         return ConversationHandler.END
 
 
@@ -238,33 +261,35 @@ class Controller:
             fallbacks=[],
         )
         dispatcher.add_handler(meeting_conversation_handler)
-        meeting_conversation_handler = ConversationHandler(
+
+        quest_conversation_handler = ConversationHandler(
             entry_points=[CommandHandler('quest', cls.quest)],
             states={},
             fallbacks=[],
         )
-        dispatcher.add_handler(meeting_conversation_handler)
+        dispatcher.add_handler(quest_conversation_handler)
 
+        dispatcher.add_handler(CommandHandler('start', cls.start_meeting))
         dispatcher.add_handler(CommandHandler(
             cls.DEPRESSED[1:],
             lambda bot, update: cls.notify_friends_about_depression(update.message.from_user.id)
         ))
-        dispatcher.add_handler(CommandHandler('start', cls.start_meeting))
         dispatcher.add_handler(CommandHandler(cls.HELP[1:], cls.print_help))
         dispatcher.add_handler(CommandHandler(cls.ADD_FRIEND[1:], cls.add_friend))
         dispatcher.add_handler(MessageHandler(Filters.photo, cls.analyze_photo))
         dispatcher.add_handler(CommandHandler('_grab_stat', cls.grab_stat))
 
+        bot = cls.get_bot()
         for user_object in User.objects.all():
             if not user_object.activated:
                 continue
             user_id = user_object.user_id
             logger.info('Run monitorings for user with id=' + str(user_id))
             Job(
-                cls._controller.ask_for_photo, interval=timedelta(0, 20),
+                cls.ask_for_photo, interval=timedelta(0, 40),
                 context={'user_id': user_id}
-            )
-            Job(cls._controller.grab_stat, interval=timedelta(1), context={'user_id': user_id})
+            ).run(bot)
+            Job(cls.grab_stat, interval=timedelta(1), context={'user_id': user_id}).run(bot)
 
         cls._updater.start_polling()
         cls._updater.idle()
@@ -309,8 +334,8 @@ class Controller:
 
     @classmethod
     def depression_detected(cls, user_id):
-        cls.notify_friends_about_depression(cls, user_id)
-        cls.notify_user_about_depression(cls, user_id)
+        cls.notify_friends_about_depression(user_id)
+        cls.notify_user_about_depression(user_id)
 
     @classmethod
     def notify_user_about_depression(cls, user_id):
@@ -327,15 +352,18 @@ class Controller:
         bot = cls.get_bot()
         username = cls.get_username(user_id)
         for subscriber in get_all_subscribers(user_id):
-            # TODO: write message
-            bot.send_message(subscriber, 'I noticed that your friend, ' + username + ', is feeling a little bit unhappy lately. '
-                             'You should talk to them and ask about their feelings.')
+            bot.send_message(
+                subscriber,
+                'I noticed that your friend, ' + username +
+                ', is feeling a little bit unhappy lately. '
+                'You should talk to them and ask about their feelings.'
+            )
 
     @classmethod
     def print_help(cls, bot, update):
         update.message.reply_text(
             'Type ' + cls.HELP + ' to get help (prints this message).\n'
-            'Type "' + cls.QUEST + ' to play my small game about depression\n'
+            'Type ' + cls.QUEST + ' to play my small game about depression.\n'
             'Type /register to allow me monitor your mental wellness, if you have not already.\n'
             'Type ' + cls.DEPRESSED + ' to tell your freinds that your is depressed.\n'
             'Type "' + cls.ADD_FRIEND + ' @friend_username" to add person with username '
@@ -382,8 +410,11 @@ class Controller:
     @classmethod
     def ask_for_photo(cls, bot, job):
         user_id = job.context['user_id']
+        print(job.context)
+        print(user_id)
+        logger.info('Send photo request to user with id=' + str(user_id))
         bot.send_message(user_id, 'Send me a photo, please!')
-    
+
     @classmethod
     def register(cls, bot, update):
         update.message.reply_text(
@@ -393,7 +424,7 @@ class Controller:
         )
 
         return AddFriends.name
-    
+
     @classmethod
     def quest(cls, bot, update):
         pass
@@ -402,7 +433,7 @@ class Controller:
     def grab_stat(cls, bot, job_or_update):
         if isinstance(job_or_update, Job):
             user_id = job_or_update.context['user_id']
-        elif isinstance(job_or_update, Updater):
+        elif isinstance(job_or_update, Update):
             user_id = job_or_update.message.from_user.id
         else:
             raise ValueError('job_or_update should be Updater or Job')
@@ -411,17 +442,17 @@ class Controller:
         if login is not None:
             today_twitter_score = twitter_score_info(login, deep_days=1)['avg_month_score']
             user.twitter_month_score *= 29.0 / 30.0
-            user.twitter_month_score += today_twitter_score
+            user.twitter_month_score += today_twitter_score / 30.0
             user.twitter_week_score *= 6.0 / 7.0
-            user.twitter_week_score += today_twitter_score
+            user.twitter_week_score += today_twitter_score / 7.0
 
-        # urls = user.url_set.order_by("-ts")
-        urls = get_urls()
+        urls = user.url_set.order_by("-ts")
+        # urls = get_urls()
         today_url_score = browser_history_score_info(urls, deep_days=1)['avg_month_score']
         user.url_month_score *= 29.0 / 30.0
-        user.url_month_score += today_url_score
+        user.url_month_score += today_url_score / 30.0
         user.url_week_score *= 6.0 / 7.0
-        user.url_week_score += today_url_score
+        user.url_week_score += today_url_score / 7.0
 
         user.save()
         logger.info('Got stat for user ' + user.username)
@@ -430,4 +461,5 @@ class Controller:
             user.twitter_month_score, user.twitter_week_score
         )
         if is_depressed:
+            logger.info('User {} is depressed'.format(user.username))
             cls.depression_detected(user_id)

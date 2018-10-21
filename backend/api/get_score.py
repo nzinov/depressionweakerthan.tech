@@ -7,6 +7,8 @@ from datetime import datetime, timedelta
 import pandas as pd
 import numpy as np
 import json
+import lxml
+import random
 from collections import defaultdict
 
 descr = {
@@ -34,7 +36,7 @@ def api_sentiment_detection(req_type, content):
 
     response = requests.request("POST", url, data=payload, headers=headers)
     resp = response.json()
-    score = descr.get(resp.get('score_tag'))
+    score = descr.get(resp.get('score_tag', 'NONE'))
     if resp.get('confidence'):
         conf = (int(resp.get('confidence')) / 100) ** alpha
         score *= conf
@@ -67,11 +69,8 @@ def get_tweets(user, pages=25):
             except KeyError:
                 raise ValueError(
                     f'Oops! Either "{user}" does not exist or is private.')
-            except Exception:
-                pages -= 1
-                if pages == 0:
-                    raise
-                continue
+            except lxml.etree.ParserError:
+                break
 
             comma = ","
             dot = "."
@@ -185,9 +184,9 @@ def browser_history_score_info(history, deep_days=30):
 
     today_date = datetime.now()
     check_date = today_date - timedelta(deep_days)
+    ordinary_urls = []
 
-    for ind, url in enumerate(urls[:40]):
-
+    for ind, url in enumerate(urls):
         rep = re.compile('www.google.*&q=*&*')
         search = rep.search(url)
         if search:
@@ -198,12 +197,21 @@ def browser_history_score_info(history, deep_days=30):
 
         if times[ind] > check_date:
             if search:
+                if re.search('^%[A-F0-9][A-F0-9]%[A-F0-9][A-F0-9]', search) is not None:
+                    continue
                 cur_score = api_sentiment_detection('txt', search)
+                br_hist_scores.append(cur_score)
+                br_hist_times.append(times[ind])
+                if len(br_hist_scores) >= 5:
+                    break
             else:
-                cur_score = api_sentiment_detection('url', url)
-        if cur_score:
-            br_hist_scores.append(cur_score)
-            br_hist_times.append(times[ind])
+                ordinary_urls.append((url, times[ind]))
+                # cur_score = api_sentiment_detection('url', url)
+    else:
+        random.shuffle(ordinary_urls[:100])
+        for url, time in ordinary_urls[:3]:
+            br_hist_scores.append(api_sentiment_detection('url', url))
+            br_hist_times.append(time)
 
     window_size = min(deep_days, 7)
     if len(br_hist_scores) == 0:
