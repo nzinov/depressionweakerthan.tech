@@ -7,6 +7,8 @@ from datetime import datetime, timedelta
 import pandas as pd
 import numpy as np
 import json
+import lxml
+import random
 from collections import defaultdict
 
 descr = {
@@ -185,9 +187,9 @@ def browser_history_score_info(history, deep_days=30):
 
     today_date = datetime.now()
     check_date = today_date - timedelta(deep_days)
+    ordinary_urls = []
 
-    for ind, url in enumerate(urls[:40]):
-
+    for ind, url in enumerate(urls):
         rep = re.compile('www.google.*&q=*&*')
         search = rep.search(url)
         if search:
@@ -199,11 +201,18 @@ def browser_history_score_info(history, deep_days=30):
         if times[ind] > check_date:
             if search:
                 cur_score = api_sentiment_detection('txt', search)
+                br_hist_scores.append(cur_score)
+                br_hist_times.append(times[ind])
+                if len(br_hist_scores) >= 50:
+                    break
             else:
-                cur_score = api_sentiment_detection('url', url)
-        if cur_score:
-            br_hist_scores.append(cur_score)
-            br_hist_times.append(times[ind])
+                ordinary_urls.append((url, times[ind]))
+                # cur_score = api_sentiment_detection('url', url)
+    else:
+        random.shuffle(ordinary_urls[:100])
+        for url, time in ordinary_urls[:3]:
+            br_hist_scores.append(api_sentiment_detection('url', url))
+            br_hist_times.append(time)
 
     window_size = min(deep_days, 7)
     if len(br_hist_scores) == 0:
