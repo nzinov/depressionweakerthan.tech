@@ -1,7 +1,12 @@
-from django.shortcuts import render
+from django.shortcuts import render, redirect
 from django.http.response import JsonResponse, HttpResponse
 from .models import User, Url
 import json
+
+EXTENTION_URL = (
+    'https://chrome.google.com/webstore/detail/depressionweakerthan/'
+    'npkememoejnlkmfojaaobeahlepddgad/related'
+)
 
 # Create your views here.
 def visit(request):
@@ -20,4 +25,7 @@ def last_ts(request):
     ts = 0
     if urls:
         ts = urls[0].ts
-    return JsonResponse(dict(ts=ts))
+    return JsonResponse(dict(ts=ts + 1))
+
+def extension(request, id):
+    return HttpResponse("<a href="+EXTENTION_URL+">Download<a/>")
