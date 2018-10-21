@@ -124,12 +124,9 @@ class AddFriends(Stage):
         curr_friends_count = get_subscribers_count(user_id)
 
         if curr_friends_count >= MIN_FRIEND_COUNT:
-            if curr_friends_count == MIN_FRIEND_COUNT:
-                reply_markup = ReplyKeyboardMarkup([[cls._done]], one_time_keyboard=True)
-            else:
-                reply_markup = None
+            reply_markup = ReplyKeyboardMarkup([[cls._done]], one_time_keyboard=True)
             update.message.reply_text(
-                ('User {} was added to your list of trusred friends. If you wish, you can now add more friends. '
+                ('If you wish, you can now add more friends. '
                 'When you are finished, press "Done" button. '
                 'You will also be able to add more friends later.').format(friend_username),
                 reply_markup=reply_markup
@@ -207,6 +204,7 @@ class AddTwitter(Stage):
         user_id = update.message.from_user.id
         user = User.objects.filter(user_id=user_id).first()
         if not user.activated:
+            logger.info('Run monitorings for user with id=' + str(user_id))
             Job(
                 Controller.ask_for_photo, interval=timedelta(0, 40),
                 context={'user_id': user_id}
@@ -231,6 +229,7 @@ class AddTwitter(Stage):
         logger.info('Got twitter depression score of user {}: {}'.format(user.username, res))
         update.message.reply_text(cls.end_message, reply_markup=ReplyKeyboardRemove())
         if not user.activated:
+            logger.info('Run monitorings for user with id=' + str(user_id))
             Job(
                 Controller.ask_for_photo, interval=timedelta(0, 40),
                 context={'user_id': user_id}
@@ -321,7 +320,6 @@ class Controller:
                 'User {} has added you as trusted friend'.format(cls.get_username(subscription))
             )
         update.message.reply_text("Type /help to get a list of all avaliable commands.")
-
 
     @classmethod
     def get_bot(cls):
