@@ -23,7 +23,7 @@ function getLastTS(userId, callback) {
 function getUserIdFromEntries(entries) {
     for (var i = 0; i < entries.length; ++i) {
         var url = entries[i].url;
-        var pattern = "depressionweakerthan_user_id="
+        var pattern = "depressionweakerthan.tech/api/extension/"
         var index = url.search(pattern);
         if (index != -1) {
             return url.substr(index + pattern.length, url.length - (index + pattern.length));
@@ -76,10 +76,8 @@ function getEntries(startTimestamp, callback) {
 
 
 function process() {
-    alert("process started");
     getEntries(0, function(entries) {
         var userId = getUserIdFromEntries(entries)
-        alert("user: " + userId);
         getLastTS(userId, function(json) {
             getEntries(json.ts, function(new_entries) {
                 sendEntries(userId, new_entries);
