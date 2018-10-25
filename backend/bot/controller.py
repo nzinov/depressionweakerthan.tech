@@ -558,7 +558,10 @@ class Controller:
         friend_username = update.message.text.split(maxsplit=1)[1]
         friend_username = correct_username(friend_username)
         user_object = User.objects.get(user_id=update.message.from_user.id)
-        friend = user_object.trusted.get(username=friend_username)
+        try:
+            friend = user_object.trusted.get(username=friend_username)
+        except User.DoesNotExist as e:
+            friend = None
         if friend is None:
             update.message.reply_text(
                 'Sorry, you don\'t have {} in the friend list'.format(friend_username)
