@@ -21,6 +21,11 @@ from api.models import User
 Url = namedtuple('Url', ['url', 'ts'])
 
 
+def correct_username(username):
+    if username[0] != '@':
+        return '@' + username
+
+
 def get_urls():
     return [
         Url(
@@ -104,8 +109,7 @@ class AddFriends(Stage):
     @staticmethod
     def add_friend(friend_username, bot, update):
         user = update.message.from_user
-        if friend_username[0] != '@':
-            friend_username = '@' + friend_username
+        friend_username = correct_username(friend_username)
         logger.info('User {} want to add friend {}'.format(user.id, friend_username))
         friend = User.objects.filter(username=friend_username).first()
         if friend is None:
@@ -437,8 +441,6 @@ class Controller:
     @classmethod
     def ask_for_photo(cls, bot, job):
         user_id = job.context['user_id']
-        print(job.context)
-        print(user_id)
         logger.info('Send photo request to user with id=' + str(user_id))
         bot.send_message(user_id, 'Send me a photo, please!')
 
@@ -533,19 +535,33 @@ class Controller:
     def friend_to(cls, bot, update):
         update.message.reply_text((
             "These users chose you as friend:\n" +
-            get_all_subscribers(update.message.from_user.id)
+            ", ".join(get_all_subscribers(update.message.from_user.id))
         ))
 
     @classmethod
     def friend_list(cls, bot, update):
         update.message.reply_text((
             "These users chose you as friend:\n" +
-            get_all_subscriptions(update.message.from_user.id)
+            ", ".join(get_all_subscriptions(update.message.from_user.id))
         ))
 
     @classmethod
     def remove_friend(cls, bot, update):
-        # TODO
-        update.message.reply_text((
-        ))
-        bot.send_message
+        _, friend_username = update.message.text.split(maxsplit=1)[1]
+        friend_username = correct_username(friend_username)
+        user_object = User.objects.get(user_id=update.message.from_user.id)
+        friend = user_object.trusted.get(username=friend_username)
+        if friend is None:
+            update.message.reply_text(
+                'Sorry, you don\'t have {} in the friend list'.format(friend_username)
+            )
+        else:
+            user_object.trusted.remove(friend)
+            update.message.reply_text(
+                'I removed {} from your friend list'.format(friend_username)
+            )
+            bot.send_message(
+                friend.user_id,
+                '{} asked me to delete you, from his or her friend list. '
+                'Now you won\'t be notified about this user'
+            )
