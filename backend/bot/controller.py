@@ -538,7 +538,7 @@ class Controller:
         update.message.reply_text((
             "These users chose you as friend:\n" +
             ", ".join([
-                friend.username for friend in user.trusted.all()
+                friend.username for friend in user.user_set.all()
             ])
         ))
 
@@ -549,7 +549,7 @@ class Controller:
         update.message.reply_text((
             "Your friends are:\n" +
             ", ".join([
-                friend.username for friend in user.user_set.all()
+                friend.username for friend in user.trusted.all()
             ])
         ))
 
@@ -568,8 +568,9 @@ class Controller:
             update.message.reply_text(
                 'I removed {} from your friend list'.format(friend_username)
             )
-            bot.send_message(
-                friend.user_id,
-                '{} asked me to delete you, from his or her friend list. '
-                'Now you won\'t be notified about this user'
-            )
+            if friend.user_id is not None:
+                bot.send_message(
+                    friend.user_id,
+                    '{} asked me to delete you, from his or her friend list. '
+                    'Now you won\'t be notified about this user'
+                )
