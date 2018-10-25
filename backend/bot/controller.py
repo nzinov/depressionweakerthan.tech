@@ -12,24 +12,45 @@ from .settings import MIN_FRIEND_COUNT, TOKEN
 import os
 from datetime import timedelta
 from api.get_score import browser_history_score_info, twitter_score_info, detect_depression
+from .quest import *
+from collections import namedtuple
 os.environ.setdefault("DJANGO_SETTINGS_MODULE", "backend.settings")
 import django
 django.setup()
 from api.models import User
-from collections import namedtuple
-from .quest import *
 Url = namedtuple('Url', ['url', 'ts'])
 
 
 def get_urls():
     return [
-        Url(url='https://www.google.es/search?hl=ru&source=hp&ei=yqjLW4bvCYPqrgSNrLL4CA&q=i+wanna+dance+with+somebody+and+be+happy+I+happy&oq=i+wanna+dance+with+somebody+and+be+happy+I+happy&gs_l=psy-ab.3..33i160k1l2.78913.95588.0.97926.37.32.4.1.1.0.138.3109.16j15.31.0....0...1c.1.64.psy-ab..1.35.3014...0j0i22i30k1j0i19k1j0i22i30i19k1j33i22i29i30k1j33i21k1.0.Qpf975be7AE', ts=1540048662161.8308),
-        Url(url='https://www.google.es/search?hl=ru&source=hp&ei=yqjLW4bvCYPqrgSNrLL4CA&q=i+dance+with+somebody+and+be+happy+I+happy&oq=i+wanna+dance+with+somebody+and+be+happy+I+happy&gs_l=psy-ab.3..33i160k1l2.78913.95588.0.97926.37.32.4.1.1.0.138.3109.16j15.31.0....0...1c.1.64.psy-ab..1.35.3014...0j0i22i30k1j0i19k1j0i22i30i19k1j33i22i29i30k1j33i21k1.0.Qpf975be7AE', ts=1540048662161.8308),
-        Url(url='https://www.google.es/search?hl=ru&source=hp&ei=yqjLW4bvCYPqrgSNrLL4CA&q=i+wanna+sing+with+somebody+and+be+happy+I+happy&oq=i+wanna+dance+with+somebody+and+be+happy+I+happy&gs_l=psy-ab.3..33i160k1l2.78913.95588.0.97926.37.32.4.1.1.0.138.3109.16j15.31.0....0...1c.1.64.psy-ab..1.35.3014...0j0i22i30k1j0i19k1j0i22i30i19k1j33i22i29i30k1j33i21k1.0.Qpf975be7AE', ts=1540048662161.8308),
-        Url(url='https://www.google.es/search?hl=ru&source=hp&ei=yqjLW4bvCYPqrgSNrLL4CA&q=i+believe+in+love&oq=i+wanna+dance+with+somebody+and+be+happy+I+happy&gs_l=psy-ab.3..33i160k1l2.78913.95588.0.97926.37.32.4.1.1.0.138.3109.16j15.31.0....0...1c.1.64.psy-ab..1.35.3014...0j0i22i30k1j0i19k1j0i22i30i19k1j33i22i29i30k1j33i21k1.0.Qpf975be7AE', ts=1540048662161.8308),
-        Url(url='https://www.google.es/search?hl=ru&source=hp&ei=yqjLW4bvCYPqrgSNrLL4CA&q=i+wanna+swim&oq=i+wanna+dance+with+somebody+and+be+happy+I+happy&gs_l=psy-ab.3..33i160k1l2.78913.95588.0.97926.37.32.4.1.1.0.138.3109.16j15.31.0....0...1c.1.64.psy-ab..1.35.3014...0j0i22i30k1j0i19k1j0i22i30i19k1j33i22i29i30k1j33i21k1.0.Qpf975be7AE', ts=1540048662161.8308),
-        Url(url='https://www.google.es/search?hl=ru&source=hp&ei=yqjLW4bvCYPqrgSNrLL4CA&q=i+love+my+mom&oq=i+wanna+dance+with+somebody+and+be+happy+I+happy&gs_l=psy-ab.3..33i160k1l2.78913.95588.0.97926.37.32.4.1.1.0.138.3109.16j15.31.0....0...1c.1.64.psy-ab..1.35.3014...0j0i22i30k1j0i19k1j0i22i30i19k1j33i22i29i30k1j33i21k1.0.Qpf975be7AE', ts=1540048662161.8308),
-        Url(url='https://www.charliechaplin.com/it/articles/42-Smile-Lyrics', ts=1540148662161.8308),
+        Url(
+            url='https://www.google.es/search?hl=ru&source=hp&ei=yqjLW4bvCYPqrgSNrLL4CA&oq='
+            'i+love+my+mom&q=i+wanna+dance&gs_l='
+            'psy-ab.3..33i160k1l2.78913.95588.0.97926.37.32.4.1.1.0.138.3109.16j15.31.0'
+            '....0...1c.1.64.psy-ab..1.35.3014...0j0i22i30k1j0i19k1j0i22i30i19k1j33i22i'
+            '29i30k1j33i21k1.0.Qpf975be7AE',
+            ts=1540048662161.8308
+        ),
+        Url(
+            url='https://www.google.es/search?hl=ru&source=hp&ei=yqjLW4bvCYPqrgSNrLL4CA&q='
+            'i+love+my+life&oq=i+wanna+dance&gs_l='
+            'psy-ab.3..33i160k1l2.78913.95588.0.97926.37.32.4.1.1.0.138.3109.16j15.31.0'
+            '....0...1c.1.64.psy-ab..1.35.3014...0j0i22i30k1j0i19k1j0i22i30i19k1j33i22i'
+            '29i30k1j33i21k1.0.Qpf975be7AE',
+            ts=1540048662161.8308
+        ),
+        Url(
+            url='https://www.google.es/search?hl=ru&source=hp&ei=yqjLW4bvCYPqrgSNrLL4CA&q='
+            'i+love+my+mom&oq=i+wanna+dance+with+somebody+and+be+happy+I+happy&gs_l='
+            'psy-ab.3..33i160k1l2.78913.95588.0.97926.37.32.4.1.1.0.138.3109.16j15.31.0'
+            '....0...1c.1.64.psy-ab..1.35.3014...0j0i22i30k1j0i19k1j0i22i30i19k1j33i22i'
+            '29i30k1j33i21k1.0.Qpf975be7AE',
+            ts=1540048662161.8308
+        ),
+        Url(
+            url='https://www.charliechaplin.com/it/articles/42-Smile-Lyrics',
+            ts=1540148662161.8308
+        ),
         Url(url='https://en.wikipedia.org/wiki/Happiness', ts=1540047662161.8308),
         Url(url='https://en.wikipedia.org/wiki/Lions', ts=1540047362161.8308),
         Url(url='https://en.wikipedia.org/wiki/Sadness', ts=1540047962161.8308),
@@ -246,6 +267,9 @@ class Controller:
     HELP = '/help'
     REGISTER = '/register'
     QUEST = '/quest'
+    FRIEND_LIST = '/friend_list'
+    REMOVE_FRIEND = '/remove_friend'
+    FRIEND_TO = '/friend_to_list'
 
     STATE = {
     }
@@ -277,6 +301,9 @@ class Controller:
         ))
         dispatcher.add_handler(CommandHandler(cls.HELP[1:], cls.print_help))
         dispatcher.add_handler(CommandHandler(cls.ADD_FRIEND[1:], cls.add_friend))
+        dispatcher.add_handler(CommandHandler(cls.REMOVE_FRIEND[1:], cls.remove_friend))
+        dispatcher.add_handler(CommandHandler(cls.FRIEND_TO[1:], cls.friend_to))
+        dispatcher.add_handler(CommandHandler(cls.FRIEND_LIST[1:], cls.friend_list))
         dispatcher.add_handler(MessageHandler(Filters.photo, cls.analyze_photo))
         dispatcher.add_handler(CommandHandler('_grab_stat', cls.grab_stat))
 
@@ -501,3 +528,24 @@ class Controller:
         if is_depressed:
             logger.info('User {} is depressed'.format(user.username))
             cls.depression_detected(user_id)
+
+    @classmethod
+    def friend_to(cls, bot, update):
+        update.message.reply_text((
+            "These users chose you as friend:\n" +
+            get_all_subscribers(update.message.from_user.id)
+        ))
+
+    @classmethod
+    def friend_list(cls, bot, update):
+        update.message.reply_text((
+            "These users chose you as friend:\n" +
+            get_all_subscriptions(update.message.from_user.id)
+        ))
+
+    @classmethod
+    def remove_friend(cls, bot, update):
+        # TODO
+        update.message.reply_text((
+        ))
+        bot.send_message
