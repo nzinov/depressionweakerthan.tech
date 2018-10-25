@@ -547,7 +547,7 @@ class Controller:
         user_id = update.message.from_user.id
         user = User.objects.get(user_id=user_id)
         update.message.reply_text((
-            "These users chose you as friend:\n" +
+            "Your friends are:\n" +
             ", ".join([
                 friend.username for friend in user.user_set.all()
             ])
@@ -555,7 +555,7 @@ class Controller:
 
     @classmethod
     def remove_friend(cls, bot, update):
-        _, friend_username = update.message.text.split(maxsplit=1)[1]
+        friend_username = update.message.text.split(maxsplit=1)[1]
         friend_username = correct_username(friend_username)
         user_object = User.objects.get(user_id=update.message.from_user.id)
         friend = user_object.trusted.get(username=friend_username)
