@@ -533,16 +533,24 @@ class Controller:
 
     @classmethod
     def friend_to(cls, bot, update):
+        user_id = update.message.from_user.id
+        user = User.objects.get(user_id=user_id)
         update.message.reply_text((
             "These users chose you as friend:\n" +
-            ", ".join(get_all_subscribers(update.message.from_user.id))
+            ", ".join([
+                friend.username for friend in user.trusted.all()
+            ])
         ))
 
     @classmethod
     def friend_list(cls, bot, update):
+        user_id = update.message.from_user.id
+        user = User.objects.get(user_id=user_id)
         update.message.reply_text((
             "These users chose you as friend:\n" +
-            ", ".join(get_all_subscriptions(update.message.from_user.id))
+            ", ".join([
+                friend.username for friend in user.user_set.all()
+            ])
         ))
 
     @classmethod
